@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Barbearia - Gestão de Clientes</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1152d4",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Navigation Header -->
+<header class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-6 py-4 lg:px-20 bg-background-light dark:bg-background-dark sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white">
+<span class="material-symbols-outlined">content_cut</span>
+</div>
+<h2 class="text-xl font-bold tracking-tight">Barbearia</h2>
+</div>
+<div class="flex items-center gap-6">
+<nav class="hidden md:flex gap-6">
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="text-sm font-bold text-primary" href="#">Clientes</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Barbeiros</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Configurações</a>
+</nav>
+<div class="flex items-center gap-3 pl-6 border-l border-slate-200 dark:border-slate-800">
+<button class="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden border border-slate-300 dark:border-slate-700">
+<img alt="Foto do perfil" data-alt="Avatar circular de um usuário masculino" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-ZCngtjehYKYnIgDBSvlNA1mc6AWEnuMoCGEguU1KSuowifiM_uWp5AKjjFI_fRQ7ZMGE-RVBeZHuFw78wmg62f7wkUNaEem1VckfZfI_jQQhXq4fjh3F9LI-lbn4T57DX62gmngRmYFykqrn9uwXpLf6O1tK3KcRnK_spfMd4j6H7oxyaKmttau7avZBmsPr9kkSs88ENhmH4UpIzL5g_boexG0-HkEFE2uTYzcOAGwesu348fzLfwEJH9__JVmjlCVimoXMnA"/>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-1 px-6 py-8 lg:px-20 max-w-7xl mx-auto w-full">
+<!-- Page Title & CTA -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+<div>
+<h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Lista de Clientes</h1>
+<p class="text-slate-500 dark:text-slate-400 mt-1">Gerencie os dados e histórico de seus clientes.</p>
+</div>
+<button class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                        Adicionar Novo
+                    </button>
+</div>
+<!-- Filters and Search -->
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 mb-6 shadow-sm">
+<div class="flex flex-col lg:flex-row gap-4">
+<div class="flex-1 relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:ring-primary focus:border-primary" placeholder="Pesquisar por nome ou telefone..." type="text"/>
+</div>
+<div class="flex gap-2">
+<button class="flex items-center gap-2 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+                                Todos
+                            </button>
+<button class="flex items-center gap-2 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-[18px]">history</span>
+                                Recentes
+                            </button>
+<button class="flex items-center gap-2 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-[18px]">star</span>
+                                VIP
+                            </button>
+</div>
+</div>
+</div>
+<!-- Data Table -->
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Nome</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Telefone</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Última Visita</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 text-right">Ações</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">JS</div>
+<span class="font-medium">João Silva</span>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-slate-600 dark:text-slate-400">(11) 98765-4321</td>
+<td class="px-6 py-4 whitespace-nowrap text-slate-600 dark:text-slate-400">12 Out, 2023</td>
+<td class="px-6 py-4 whitespace-nowrap text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors rounded-lg hover:bg-primary/10">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="h-9 w-9 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-sm">MC</div>
+<span class="font-medium">Maria Costa</span>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-slate-600 dark:text-slate-400">(11) 91234-5678</td>
+<td class="px-6 py-4 whitespace-nowrap text-slate-600 dark:text-slate-400">08 Out, 2023</td>
+<td class="px-6 py-4 whitespace-nowrap text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors rounded-lg hover:bg-primary/10">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">RO</div>
+<span class="font-medium">Ricardo Oliveira</span>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-slate-600 dark:text-slate-400">(11) 97777-8888</td>
+<td class="px-6 py-4 whitespace-nowrap text-slate-600 dark:text-slate-400">30 Set, 2023</td>
+<td class="px-6 py-4 whitespace-nowrap text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors rounded-lg hover:bg-primary/10">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="h-9 w-9 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-sm">AS</div>
+<span class="font-medium">Ana Santos</span>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-slate-600 dark:text-slate-400">(11) 93333-2211</td>
+<td class="px-6 py-4 whitespace-nowrap text-slate-600 dark:text-slate-400">25 Set, 2023</td>
+<td class="px-6 py-4 whitespace-nowrap text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors rounded-lg hover:bg-primary/10">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+<p class="text-sm text-slate-500">Mostrando 1-4 de 48 clientes</p>
+<div class="flex gap-2">
+<button class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-sm disabled:opacity-50">Anterior</button>
+<button class="px-3 py-1 bg-primary text-white rounded text-sm">1</button>
+<button class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-sm">2</button>
+<button class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-sm">Próximo</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="mt-auto px-6 py-10 lg:px-20 border-t border-slate-200 dark:border-slate-800">
+<div class="flex flex-col md:flex-row justify-between items-center gap-4">
+<div class="text-slate-500 text-sm">
+                        © 2023 Barbearia Professional. Todos os direitos reservados.
+                    </div>
+<div class="flex gap-6">
+<a class="text-sm text-slate-500 hover:text-primary transition-colors" href="#">Privacidade</a>
+<a class="text-sm text-slate-500 hover:text-primary transition-colors" href="#">Termos</a>
+<a class="text-sm text-slate-500 hover:text-primary transition-colors" href="#">Ajuda</a>
+</div>
+</div>
+</footer>
+</div>
+</div>
+</body></html>

@@ -1,0 +1,74 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+
+type CurrentTimeLineProps = {
+  selectedDate: string;
+  startHour: number;
+  endHour: number;
+  slotMinutes: number;
+  rowHeight: number;
+  timeColumnWidthPx: number;
+};
+
+function toDateKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = `${date.getMonth() + 1}`.padStart(2, "0");
+  const d = `${date.getDate()}`.padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+export function CurrentTimeLine({
+  selectedDate,
+  startHour,
+  endHour,
+  slotMinutes,
+  rowHeight,
+  timeColumnWidthPx,
+}: CurrentTimeLineProps) {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const state = useMemo(() => {
+    if (toDateKey(now) !== selectedDate) {
+      return { show: false, top: 0, label: "" };
+    }
+
+    const minutesFromStart = now.getHours() * 60 + now.getMinutes() - startHour * 60;
+    const totalMinutes = (endHour - startHour) * 60;
+
+    if (minutesFromStart < 0 || minutesFromStart > totalMinutes) {
+      return { show: false, top: 0, label: "" };
+    }
+
+    const top = (minutesFromStart / slotMinutes) * rowHeight;
+    const label = now.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    return { show: true, top, label };
+  }, [now, selectedDate, startHour, endHour, slotMinutes, rowHeight]);
+
+  if (!state.show) {
+    return null;
+  }
+
+  return (
+    <div
+      className="pointer-events-none absolute right-0 z-30"
+      style={{ left: `${timeColumnWidthPx}px`, top: `${state.top}px` }}
+    >
+      <div className="relative border-t-2 border-red-500">
+        <span className="absolute -left-2 -top-1.5 h-3 w-3 rounded-full bg-red-500" />
+        <span className="absolute left-2 -top-3 rounded bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+          {state.label}
+        </span>
+      </div>
+    </div>
+  );
+}

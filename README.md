@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NextAuth + Prisma + SQLite Starter
 
-## Getting Started
+Feature inicial pronta com:
 
-First, run the development server:
+- Next.js (App Router)
+- NextAuth com login por email e senha (Credentials)
+- Prisma ORM + SQLite
+- Super usuario admin
+- UI minimalista em preto e branco (login + dashboard)
+
+## Rodando localmente
 
 ```bash
+npm install
+npm run db:migrate -- --name init
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Credenciais iniciais do super admin
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Definidas em `./.env`:
 
-## Learn More
+- `ADMIN_EMAIL=admin@example.com`
+- `ADMIN_PASSWORD=Admin@123456`
 
-To learn more about Next.js, take a look at the following resources:
+Voce pode trocar esses valores e rodar novamente:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run db:seed
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Scripts uteis
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run db:generate` -> gera o client do Prisma
+- `npm run db:migrate -- --name <nome>` -> cria/aplica migracao
+- `npm run db:seed` -> cria/atualiza o super admin
+- `npm run lint` -> valida regras de lint
+- `npm run build` -> build de producao
