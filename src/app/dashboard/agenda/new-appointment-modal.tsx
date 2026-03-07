@@ -106,6 +106,7 @@ type NewAppointmentModalProps = {
   barbers: OptionItem[];
   services: OptionItem[];
   selectedDate: string;
+  returnPath?: string;
   initialOpen?: boolean;
   action: (formData: FormData) => void | Promise<void>;
 };
@@ -115,6 +116,7 @@ export function NewAppointmentModal({
   barbers,
   services,
   selectedDate,
+  returnPath = "/dashboard/agenda",
   initialOpen = false,
   action,
 }: NewAppointmentModalProps) {
@@ -215,6 +217,7 @@ export function NewAppointmentModal({
               <input name="clientId" value={clientId} readOnly hidden />
               <input name="barberId" value={barberId} readOnly hidden />
               <input name="serviceId" value={serviceId} readOnly hidden />
+              <input name="returnPath" value={returnPath} readOnly hidden />
 
               <input
                 name="date"

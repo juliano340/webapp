@@ -33,14 +33,24 @@ const appointmentSchema = z.object({
   startTime: z.string().min(1),
 });
 
+const updateAppointmentSchema = appointmentSchema.extend({
+  appointmentId: z.string().min(1),
+});
+
+function withQueryParam(path: string, key: "error" | "success", value: string): string {
+  const [pathname, existingQuery = ""] = path.split("?", 2);
+  const params = new URLSearchParams(existingQuery);
+  params.set(key, value);
+  const query = params.toString();
+  return query ? `${pathname}?${query}` : pathname;
+}
+
 function redirectWithError(path: string, message: string): never {
-  const params = new URLSearchParams({ error: message });
-  redirect(`${path}?${params.toString()}`);
+  redirect(withQueryParam(path, "error", message));
 }
 
 function redirectWithSuccess(path: string, message: string): never {
-  const params = new URLSearchParams({ success: message });
-  redirect(`${path}?${params.toString()}`);
+  redirect(withQueryParam(path, "success", message));
 }
 
 function resolvePath(value: FormDataEntryValue | null, fallback: string): string {
@@ -162,6 +172,8 @@ export async function createBarberAction(formData: FormData) {
 }
 
 export async function createAppointmentAction(formData: FormData) {
+  const returnPath = resolvePath(formData.get("returnPath"), "/dashboard/agenda");
+
   const parsed = appointmentSchema.safeParse({
     clientId: formData.get("clientId"),
     barberId: formData.get("barberId"),
@@ -171,7 +183,7 @@ export async function createAppointmentAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    redirectWithError("/dashboard/agenda", "Dados invalidos para agendamento.");
+    redirectWithError(returnPath, "Dados invalidos para agendamento.");
   }
 
   const service = await prisma.service.findUnique({
@@ -180,13 +192,13 @@ export async function createAppointmentAction(formData: FormData) {
   });
 
   if (!service) {
-    redirectWithError("/dashboard/agenda", "Servico nao encontrado.");
+    redirectWithError(returnPath, "Servico nao encontrado.");
   }
 
   const startsAt = new Date(`${parsed.data.date}T${parsed.data.startTime}:00`);
 
   if (Number.isNaN(startsAt.getTime())) {
-    redirectWithError("/dashboard/agenda", "Data ou horario invalido.");
+    redirectWithError(returnPath, "Data ou horario invalido.");
   }
 
   const endsAt = new Date(startsAt.getTime() + service.durationInMinutes * 60 * 1000);
@@ -201,7 +213,7 @@ export async function createAppointmentAction(formData: FormData) {
   });
 
   if (conflict) {
-    redirectWithError("/dashboard/agenda", "Conflito: barbeiro ja possui agendamento nesse horario.");
+    redirectWithError(returnPath, "Conflito: barbeiro ja possui agendamento nesse horario.");
   }
 
   await prisma.appointment.create({
@@ -216,5 +228,78 @@ export async function createAppointmentAction(formData: FormData) {
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/agenda");
-  redirectWithSuccess("/dashboard/agenda", "Agendamento criado com sucesso.");
+  redirectWithSuccess(returnPath, "Agendamento criado com sucesso.");
+}
+
+export async function updateAppointmentAction(formData: FormData) {
+  const returnPath = resolvePath(formData.get("returnPath"), "/dashboard/agenda");
+
+  const parsed = updateAppointmentSchema.safeParse({
+    appointmentId: formData.get("appointmentId"),
+    clientId: formData.get("clientId"),
+    barberId: formData.get("barberId"),
+    serviceId: formData.get("serviceId"),
+    date: formData.get("date"),
+    startTime: formData.get("startTime"),
+  });
+
+  if (!parsed.success) {
+    redirectWithError(returnPath, "Dados invalidos para edicao do agendamento.");
+  }
+
+  const [service, appointment] = await Promise.all([
+    prisma.service.findUnique({
+      where: { id: parsed.data.serviceId },
+      select: { durationInMinutes: true },
+    }),
+    prisma.appointment.findUnique({
+      where: { id: parsed.data.appointmentId },
+      select: { id: true },
+    }),
+  ]);
+
+  if (!appointment) {
+    redirectWithError(returnPath, "Agendamento nao encontrado.");
+  }
+
+  if (!service) {
+    redirectWithError(returnPath, "Servico nao encontrado.");
+  }
+
+  const startsAt = new Date(`${parsed.data.date}T${parsed.data.startTime}:00`);
+
+  if (Number.isNaN(startsAt.getTime())) {
+    redirectWithError(returnPath, "Data ou horario invalido.");
+  }
+
+  const endsAt = new Date(startsAt.getTime() + service.durationInMinutes * 60 * 1000);
+
+  const conflict = await prisma.appointment.findFirst({
+    where: {
+      barberId: parsed.data.barberId,
+      id: { not: parsed.data.appointmentId },
+      startsAt: { lt: endsAt },
+      endsAt: { gt: startsAt },
+    },
+    select: { id: true },
+  });
+
+  if (conflict) {
+    redirectWithError(returnPath, "Conflito: barbeiro ja possui agendamento nesse horario.");
+  }
+
+  await prisma.appointment.update({
+    where: { id: parsed.data.appointmentId },
+    data: {
+      clientId: parsed.data.clientId,
+      barberId: parsed.data.barberId,
+      serviceId: parsed.data.serviceId,
+      startsAt,
+      endsAt,
+    },
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/agenda");
+  redirectWithSuccess(returnPath, "Agendamento atualizado com sucesso.");
 }

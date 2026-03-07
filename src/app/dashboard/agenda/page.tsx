@@ -1,14 +1,15 @@
 import Link from "next/link";
-import { createAppointmentAction } from "@/app/dashboard/actions";
+import { createAppointmentAction, updateAppointmentAction } from "@/app/dashboard/actions";
 import { formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { CurrentTimeLine } from "./current-time-line";
+import { EditAppointmentModal } from "./edit-appointment-modal";
 import { NewAppointmentModal } from "./new-appointment-modal";
 
 type AgendaView = "day" | "week" | "month";
 
 type AgendaPageProps = {
-  searchParams?: Promise<{ view?: string; date?: string; error?: string; success?: string; new?: string }>;
+  searchParams?: Promise<{ view?: string; date?: string; error?: string; success?: string; new?: string; edit?: string }>;
 };
 
 const START_HOUR = 8;
@@ -43,6 +44,12 @@ function initials(name: string): string {
 
 function minutesFromStart(date: Date): number {
   return date.getHours() * 60 + date.getMinutes() - START_HOUR * 60;
+}
+
+function toTimeKey(date: Date): string {
+  const hh = `${date.getHours()}`.padStart(2, "0");
+  const mm = `${date.getMinutes()}`.padStart(2, "0");
+  return `${hh}:${mm}`;
 }
 
 const MINI_CARD_TONES = [
@@ -138,6 +145,22 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
   const nextDate = toDateKey(addDays(safeDate, view === "month" ? 30 : view === "week" ? 7 : 1));
   const todayDate = toDateKey(new Date());
   const isOnToday = dateKey === todayDate;
+  const agendaPath = `/dashboard/agenda?view=${view}&date=${dateKey}`;
+  const editingId = typeof params.edit === "string" ? params.edit : "";
+  const editingAppointment = appointments.find((appointment) => appointment.id === editingId) ?? null;
+  const editableAppointment = editingAppointment
+    ? {
+        id: editingAppointment.id,
+        clientId: editingAppointment.client.id,
+        clientName: editingAppointment.client.name,
+        barberId: editingAppointment.barber.id,
+        barberName: editingAppointment.barber.name,
+        serviceId: editingAppointment.service.id,
+        serviceName: editingAppointment.service.name,
+        date: toDateKey(editingAppointment.startsAt),
+        startTime: toTimeKey(editingAppointment.startsAt),
+      }
+    : null;
 
   const currentLabel =
     view === "day"
@@ -174,6 +197,17 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
               selectedDate={dateKey}
               initialOpen={params.new === "1"}
               action={createAppointmentAction}
+              returnPath={agendaPath}
+            />
+
+            <EditAppointmentModal
+              clients={clients.map((c) => ({ id: c.id, name: c.name }))}
+              barbers={barbers.map((b) => ({ id: b.id, name: b.name }))}
+              services={services.map((s) => ({ id: s.id, name: s.name }))}
+              appointment={editableAppointment}
+              returnPath={agendaPath}
+              initialOpen={editingAppointment !== null}
+              action={updateAppointmentAction}
             />
 
             <div className="flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
@@ -272,17 +306,19 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                           const tone = toneBySeed(a.barber.id);
 
                           return (
-                            <article
+                            <Link
                               key={a.id}
-                              className={`absolute left-1 right-1 overflow-hidden rounded-md border px-2 py-1.5 text-xs leading-tight shadow-sm ${tone.card}`}
+                              href={`${agendaPath}&edit=${a.id}`}
+                              className={`absolute left-1 right-1 overflow-hidden rounded-md border px-2 py-1.5 text-xs leading-tight shadow-sm transition-transform hover:-translate-y-0.5 ${tone.card}`}
                               style={{ top: `${top + 3}px`, height: `${height}px` }}
+                              title="Clique para editar"
                             >
                               <p className={`text-xs font-semibold leading-tight ${tone.name}`}>{a.client.name}</p>
                               <p className={`text-[11px] leading-tight ${tone.meta}`}>{a.service.name}</p>
                               <p className={`mt-1 text-[10px] leading-tight ${tone.meta}`}>
                                 {a.startsAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} - {a.endsAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                               </p>
-                            </article>
+                            </Link>
                           );
                         })}
                       </div>
@@ -334,12 +370,17 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                           const tone = toneBySeed(a.barber.id);
 
                           return (
-                            <div key={a.id} className={`rounded-md border px-2 py-1 text-xs ${tone.card}`}>
+                            <Link
+                              key={a.id}
+                              href={`${agendaPath}&edit=${a.id}`}
+                              className={`block rounded-md border px-2 py-1 text-xs transition-transform hover:-translate-y-0.5 ${tone.card}`}
+                              title="Clique para editar"
+                            >
                               <p className={`font-medium ${tone.name}`}>{a.client.name}</p>
                               <p className={tone.meta}>
                                 {a.barber.name} · {a.startsAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                               </p>
-                            </div>
+                            </Link>
                           );
                         })
                       )}
