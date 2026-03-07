@@ -1,163 +1,52 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #f4f4f2;
-  --foreground: #0f0f0f;
+  --background: #ffffff;
+  --foreground: #111827;
   --surface: #ffffff;
-  --muted: #666666;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --primary: #111827;
+  --primary-foreground: #ffffff;
 }
 
 .dark {
-  --background: #090d16;
-  --foreground: #f1f5f9;
-  --surface: #101827;
-  --muted: #94a3b8;
+  --background: #0b1220;
+  --foreground: #f9fafb;
+  --surface: #111827;
+  --muted: #9ca3af;
+  --border: #374151;
+  --primary: #f9fafb;
+  --primary-foreground: #ffffff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
   --font-sans: var(--font-body);
+}
+
+* {
+  border-color: var(--border);
 }
 
 body {
   min-height: 100vh;
   color: var(--foreground);
-  font-family: var(--font-body), sans-serif;
-  background:
-    radial-gradient(circle at top right, #ffffff, transparent 45%),
-    radial-gradient(circle at bottom left, #e9e9e7, transparent 40%),
-    var(--background);
-}
-
-.dark body {
-  background:
-    radial-gradient(circle at top right, #1a2436, transparent 40%),
-    radial-gradient(circle at bottom left, #151c2a, transparent 35%),
-    var(--background);
-}
-
-.dark .bg-white {
-  background-color: #101827;
-}
-
-.dark .bg-zinc-50 {
-  background-color: #111a29;
-}
-
-.dark .bg-zinc-100 {
-  background-color: #182236;
-}
-
-.dark .border-zinc-200,
-.dark .border-zinc-300 {
-  border-color: #26344d;
-}
-
-.dark .text-black {
-  color: #f1f5f9;
-}
-
-.dark .text-zinc-400 {
-  color: #8da0be;
-}
-
-.dark .text-zinc-500,
-.dark .text-zinc-600,
-.dark .text-zinc-700 {
-  color: #9cafc8;
-}
-
-.dark .hover\:bg-zinc-100:hover {
-  background-color: #1a2538;
-}
-
-.dark .hover\:bg-zinc-50:hover {
-  background-color: #162133;
-}
-
-.dark .bg-black\/5 {
-  background-color: rgb(148 163 184 / 0.12);
-}
-
-/* Dark mode for all white/light backgrounds */
-.dark .bg-white,
-.dark .bg-\[\#f6f6f8\] {
-  background-color: #0f172a;
-}
-
-.dark .bg-zinc-50 {
-  background-color: #1e293b;
-}
-
-.dark .bg-zinc-100 {
-  background-color: #334155;
-}
-
-.dark .bg-zinc-200 {
-  background-color: #475569;
-}
-
-/* Dark mode for borders */
-.dark .border-zinc-200,
-.dark .border-zinc-300 {
-  border-color: #334155;
-}
-
-.dark .border-black\/10 {
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-/* Dark mode for text colors */
-.dark .text-black {
-  color: #f1f5f9;
-}
-
-.dark .text-white {
-  color: #f1f5f9;
-}
-
-.dark .text-zinc-400 {
-  color: #94a3b8;
-}
-
-.dark .text-zinc-500,
-.dark .text-zinc-600,
-.dark .text-zinc-700 {
-  color: #cbd5e1;
-}
-
-/* Dark mode for hover states */
-.dark .hover\:bg-zinc-100:hover {
-  background-color: #1e293b;
-}
-
-.dark .hover\:bg-zinc-50:hover {
-  background-color: #1e293b;
-}
-
-.dark .hover\:bg-zinc-200:hover {
-  background-color: #334155;
-}
-
-.dark .hover\:bg-zinc-800:hover {
-  background-color: #1e293b;
-}
-
-.dark .hover\:text-white:hover {
-  color: #f1f5f9;
-}
-
-/* Dark mode for divide colors */
-.dark .divide-y > :not([hidden]) ~ :not([hidden]) {
-  border-color: #334155;
-}
-
-.dark .divide-zinc-100 {
-  border-color: #334155;
+  font-family: var(--font-body), system-ui, sans-serif;
+  background-color: var(--background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
-  background: #111111;
-  color: #ffffff;
+  background: var(--primary);
+  color: var(--primary-foreground);
 }

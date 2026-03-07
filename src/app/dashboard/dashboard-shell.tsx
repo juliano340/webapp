@@ -25,49 +25,54 @@ export function DashboardShell({ children, userEmail, userRole }: DashboardShell
   const pathname = usePathname();
 
   return (
-    <div className="relative min-h-screen bg-[#f6f6f8] dark:bg-[#0b1220]">
+    <div className="relative min-h-screen bg-white dark:bg-gray-950">
+      {/* Mobile menu button */}
       <button
         type="button"
         onClick={() => setIsOpen((state) => !state)}
-        className="fixed left-4 top-4 z-50 rounded-md border border-zinc-300 bg-white p-2 text-black shadow-sm md:hidden dark:bg-slate-800 dark:border-slate-600 dark:text-white"
+        className="fixed left-4 top-4 z-50 rounded-lg border border-gray-200 bg-white p-2 text-gray-900 shadow-sm transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 md:hidden"
         aria-label="Alternar menu"
       >
         {isOpen ? (
           <svg viewBox="0 0 20 20" className="h-5 w-5" aria-hidden="true">
-            <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" strokeWidth="1.6" />
+            <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" strokeWidth="1.6" fill="none" />
           </svg>
         ) : (
           <svg viewBox="0 0 20 20" className="h-5 w-5" aria-hidden="true">
-            <path d="M3 5H17M3 10H17M3 15H17" stroke="currentColor" strokeWidth="1.6" />
+            <path d="M3 5H17M3 10H17M3 15H17" stroke="currentColor" strokeWidth="1.6" fill="none" />
           </svg>
         )}
       </button>
 
+      {/* Mobile overlay */}
       <div
-        className={`fixed inset-0 z-40 bg-black/25 transition md:hidden ${isOpen ? "opacity-100" : "pointer-events-none opacity-0"}`}
+        className={`fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity md:hidden ${isOpen ? "opacity-100" : "pointer-events-none opacity-0"}`}
         onClick={() => setIsOpen(false)}
       />
 
+      {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-zinc-200 bg-white transition-transform md:translate-x-0 dark:bg-slate-900 dark:border-slate-700 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-gray-200 bg-white transition-transform duration-300 md:translate-x-0 dark:border-gray-700 dark:bg-gray-900 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <div className="border-b border-zinc-200 px-6 py-6 dark:border-slate-700">
+        {/* Logo */}
+        <div className="border-b border-gray-200 px-6 py-6 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black text-xs font-bold text-white dark:bg-white dark:text-black">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-900 text-xs font-bold text-white dark:bg-gray-200 dark:text-gray-900">
               BM
             </div>
             <div>
-              <p className="text-sm font-bold uppercase tracking-tight text-black dark:text-white">Premium Cut</p>
-              <p className="text-xs text-zinc-500 dark:text-slate-400">Painel Admin</p>
+              <p className="text-sm font-bold uppercase tracking-tight text-gray-900 dark:text-white">Premium Cut</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Painel Admin</p>
             </div>
           </div>
         </div>
 
+        {/* Navigation */}
         <nav className="flex flex-1 flex-col gap-1 px-4 py-5">
-          <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-slate-400">
+          <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
             Menu
           </p>
-          <p className="px-3 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400 dark:text-slate-500">
+          <p className="px-3 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
             Cadastros
           </p>
           {menuItems.map((item) => {
@@ -77,15 +82,17 @@ export function DashboardShell({ children, userEmail, userRole }: DashboardShell
                 key={`${item.href}-${item.label}`}
                 href={item.href}
                 onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition ${
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   active
-                    ? "border-black/10 bg-black/5 text-black dark:border-white/10 dark:bg-white/10 dark:text-white"
-                    : "border-transparent text-zinc-600 hover:bg-zinc-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                    ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900"
+                    : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                 }`}
               >
                 <span
-                  className={`flex h-7 w-7 items-center justify-center rounded-md text-[10px] font-semibold ${
-                    active ? "bg-black text-white dark:bg-white dark:text-black" : "bg-zinc-200 text-zinc-600 dark:bg-slate-700 dark:text-slate-300"
+                  className={`flex h-7 w-7 items-center justify-center rounded-lg text-[10px] font-semibold ${
+                    active
+                      ? "bg-white/20 text-white dark:bg-white/20"
+                      : "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
                   }`}
                 >
                   {item.icon}
@@ -96,17 +103,19 @@ export function DashboardShell({ children, userEmail, userRole }: DashboardShell
           })}
         </nav>
 
-        <div className="space-y-4 border-t border-zinc-200 px-4 py-4 dark:border-slate-700">
+        {/* Footer */}
+        <div className="space-y-3 border-t border-gray-200 px-4 py-4 dark:border-gray-800">
           <ThemeToggle />
-          <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-slate-700 dark:bg-slate-800">
-            <p className="text-xs font-semibold text-black dark:text-white">{userEmail}</p>
-            <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-zinc-500 dark:text-slate-400">{userRole}</p>
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/50">
+            <p className="text-xs font-semibold text-gray-900 dark:text-white">{userEmail}</p>
+            <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">{userRole}</p>
           </div>
           <SignOutButton className="w-full" />
         </div>
       </aside>
 
-      <main className="min-h-screen bg-transparent px-4 pb-8 pt-20 md:ml-64 md:px-8 md:pt-8">
+      {/* Main content */}
+      <main className="min-h-screen bg-white px-4 pb-8 pt-20 dark:bg-gray-950 md:ml-64 md:px-8 md:pt-8">
         {children}
       </main>
     </div>

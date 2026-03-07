@@ -20,7 +20,7 @@ function getInitialTheme(): ThemeMode {
     return saved;
   }
 
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return "light";
 }
 
 export function ThemeToggle() {
@@ -40,12 +40,12 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-600 transition hover:bg-zinc-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+      className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
       aria-label="Alternar tema"
       title="Alternar tema"
     >
-      <span aria-hidden="true">{mode === "dark" ? "☀" : "☾"}</span>
-      {mode === "dark" ? "Claro" : "Escuro"}
+      <span aria-hidden="true" className="text-sm">{mode === "dark" ? "☀️" : "🌙"}</span>
+      {mode === "dark" ? "Modo Claro" : "Modo Escuro"}
     </button>
   );
 }

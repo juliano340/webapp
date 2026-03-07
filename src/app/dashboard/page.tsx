@@ -17,20 +17,20 @@ function statusForAppointment(startsAt: Date, endsAt: Date): { label: string; cl
   if (now >= startsAt && now <= endsAt) {
     return {
       label: "Em atendimento",
-      className: "bg-amber-500/10 text-amber-600",
+      className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
     };
   }
 
   if (startsAt > now) {
     return {
       label: "Confirmado",
-      className: "bg-emerald-500/10 text-emerald-600",
+      className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
     };
   }
 
   return {
     label: "Concluido",
-    className: "bg-zinc-500/10 text-zinc-600",
+    className: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
   };
 }
 
@@ -78,79 +78,81 @@ export default async function DashboardPage() {
     <section className="mx-auto w-full max-w-7xl">
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-black uppercase tracking-tight text-black dark:text-white">Dashboard</h2>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-slate-400">Visao geral das atividades de hoje, {monthLabel}</p>
+          <h2 className="text-3xl font-black uppercase tracking-tight text-gray-900 dark:text-white">Dashboard</h2>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Visao geral das atividades de hoje, {monthLabel}</p>
         </div>
 
         <Link
           href="/dashboard/agenda?view=day&new=1"
-          className="inline-flex items-center gap-2 rounded-lg bg-black px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-slate-200"
+          className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
         >
           <span className="text-base">+</span>
           Novo Agendamento
         </Link>
       </header>
 
+      {/* Stats Cards */}
       <div className="mb-8 grid gap-5 md:grid-cols-3">
-        <article className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:bg-slate-900 dark:border-slate-700">
+        <article className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <div className="mb-4 flex items-start justify-between">
-            <span className="rounded-lg bg-black/5 px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-black dark:bg-white/10 dark:text-white">
+            <span className="rounded-lg bg-gray-100 px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-gray-600 dark:bg-gray-800 dark:text-gray-300">
               AG
             </span>
-            <span className="rounded bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">Hoje</span>
+            <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">Hoje</span>
           </div>
-          <p className="text-sm font-medium text-zinc-500 dark:text-slate-400">Agendamentos Hoje</p>
-          <p className="mt-1 text-3xl font-black text-black dark:text-white">{appointmentsToday.length}</p>
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Agendamentos Hoje</p>
+          <p className="mt-1 text-3xl font-black text-gray-900 dark:text-white">{appointmentsToday.length}</p>
         </article>
 
-        <article className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:bg-slate-900 dark:border-slate-700">
+        <article className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <div className="mb-4 flex items-start justify-between">
-            <span className="rounded-lg bg-black/5 px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-black dark:bg-white/10 dark:text-white">
+            <span className="rounded-lg bg-gray-100 px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-gray-600 dark:bg-gray-800 dark:text-gray-300">
               CL
             </span>
-            <span className="rounded bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">Hoje</span>
+            <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">Hoje</span>
           </div>
-          <p className="text-sm font-medium text-zinc-500 dark:text-slate-400">Novos Clientes</p>
-          <p className="mt-1 text-3xl font-black text-black dark:text-white">{newClientsToday}</p>
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Novos Clientes</p>
+          <p className="mt-1 text-3xl font-black text-gray-900 dark:text-white">{newClientsToday}</p>
         </article>
 
-        <article className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:bg-slate-900 dark:border-slate-700">
+        <article className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <div className="mb-4 flex items-start justify-between">
-            <span className="rounded-lg bg-black/5 px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-black dark:bg-white/10 dark:text-white">
+            <span className="rounded-lg bg-gray-100 px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-gray-600 dark:bg-gray-800 dark:text-gray-300">
               R$
             </span>
-            <span className="rounded bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
               Diario
             </span>
           </div>
-          <p className="text-sm font-medium text-zinc-500 dark:text-slate-400">Receita Diaria</p>
-          <p className="mt-1 text-3xl font-black text-black dark:text-white">{formatBRLFromCents(dailyRevenueInCents)}</p>
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Receita Diaria</p>
+          <p className="mt-1 text-3xl font-black text-gray-900 dark:text-white">{formatBRLFromCents(dailyRevenueInCents)}</p>
         </article>
       </div>
 
-      <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:bg-slate-900 dark:border-slate-700">
-        <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-slate-700">
-          <h3 className="text-sm font-bold uppercase tracking-[0.16em] text-black dark:text-white">Proximos Agendamentos</h3>
-          <Link href="/dashboard/agenda" className="text-xs font-semibold text-black hover:underline dark:text-white">
+      {/* Appointments Table */}
+      <section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-800">
+          <h3 className="text-sm font-bold uppercase tracking-[0.16em] text-gray-900 dark:text-white">Proximos Agendamentos</h3>
+          <Link href="/dashboard/agenda" className="text-xs font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
             Ver Agenda Completa
           </Link>
         </div>
 
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-zinc-50 dark:bg-slate-800">
+            <thead className="bg-gray-50 dark:bg-gray-800/50">
               <tr>
-                <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-500 dark:text-slate-400">Horario</th>
-                <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-500 dark:text-slate-400">Cliente</th>
-                <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-500 dark:text-slate-400">Servico</th>
-                <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-500 dark:text-slate-400">Barbeiro</th>
-                <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-500 dark:text-slate-400">Status</th>
+                <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">Horario</th>
+                <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">Cliente</th>
+                <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">Servico</th>
+                <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">Barbeiro</th>
+                <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100 dark:divide-slate-700">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {upcomingAppointments.length === 0 ? (
                 <tr>
-                  <td className="px-6 py-6 text-zinc-500 dark:text-slate-400" colSpan={5}>
+                  <td className="px-6 py-6 text-gray-500 dark:text-gray-400" colSpan={5}>
                     Sem agendamentos futuros no momento.
                   </td>
                 </tr>
@@ -163,13 +165,13 @@ export default async function DashboardPage() {
                   });
 
                   return (
-                    <tr key={appointment.id} className="hover:bg-zinc-50 transition-colors dark:hover:bg-slate-800">
-                      <td className="px-6 py-4 font-semibold text-black dark:text-white">{timeLabel}</td>
-                      <td className="px-6 py-4 text-black dark:text-white">{appointment.client.name}</td>
-                      <td className="px-6 py-4 text-zinc-600 dark:text-slate-300">{appointment.service.name}</td>
-                      <td className="px-6 py-4 text-zinc-600 dark:text-slate-300">{appointment.barber.name}</td>
+                    <tr key={appointment.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                      <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">{timeLabel}</td>
+                      <td className="px-6 py-4 text-gray-900 dark:text-white">{appointment.client.name}</td>
+                      <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{appointment.service.name}</td>
+                      <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{appointment.barber.name}</td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex rounded px-2 py-0.5 text-xs font-medium ${status.className}`}>
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${status.className}`}>
                           {status.label}
                         </span>
                       </td>

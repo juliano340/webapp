@@ -58,23 +58,23 @@ function SearchableSelect({
           setOpen(true);
         }}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-black"
+        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900 focus:ring-1 focus:ring-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-gray-200 dark:focus:ring-gray-200"
         required
       />
 
       <button
         type="button"
         onClick={() => setOpen((state) => !state)}
-        className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-1 text-zinc-400 hover:bg-zinc-100"
+        className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-1 text-gray-400 transition-colors hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-gray-700"
         aria-label={`Alternar ${placeholder}`}
       >
         ▾
       </button>
 
       {open ? (
-        <div className="absolute z-20 mt-1 max-h-52 w-full overflow-auto rounded-lg border border-zinc-200 bg-white p-1 shadow-lg">
+        <div className="absolute z-20 mt-1 max-h-52 w-full overflow-auto rounded-lg border border-gray-200 bg-white p-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
           {filtered.length === 0 ? (
-            <p className="px-2 py-2 text-xs text-zinc-500">Nenhum resultado</p>
+            <p className="px-2 py-2 text-xs text-gray-500 dark:text-gray-400">Nenhum resultado</p>
           ) : (
             filtered.map((item) => (
               <button
@@ -86,7 +86,9 @@ function SearchableSelect({
                   setOpen(false);
                 }}
                 className={`block w-full rounded px-2 py-2 text-left text-sm transition ${
-                  selectedId === item.id ? "bg-zinc-900 text-white" : "text-zinc-700 hover:bg-zinc-100"
+                  selectedId === item.id
+                    ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900"
+                    : "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
                 }`}
               >
                 {item.name}
@@ -148,7 +150,7 @@ export function NewAppointmentModal({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800"
+        className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
       >
         <span className="text-base">+</span>
         Novo
@@ -163,18 +165,18 @@ export function NewAppointmentModal({
             aria-label="Fechar modal"
           />
 
-          <section className="relative z-10 w-full max-w-xl rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl">
+          <section className="relative z-10 w-full max-w-xl rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-900">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
-                <h3 className="text-2xl font-black tracking-tight text-black">Novo agendamento</h3>
-                <p className="mt-1 text-sm text-zinc-500">
+                <h3 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">Novo agendamento</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   Pesquise e selecione cliente, barbeiro e servico.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-500 hover:bg-zinc-100"
+                className="rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-500 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
               >
                 Fechar
               </button>
@@ -218,7 +220,7 @@ export function NewAppointmentModal({
                 name="date"
                 type="date"
                 defaultValue={selectedDate}
-                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900 focus:ring-1 focus:ring-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-gray-200 dark:focus:ring-gray-200"
                 required
               />
 
@@ -226,7 +228,7 @@ export function NewAppointmentModal({
                 name="startTime"
                 type="time"
                 defaultValue="09:00"
-                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900 focus:ring-1 focus:ring-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-gray-200 dark:focus:ring-gray-200"
                 required
               />
 
@@ -234,7 +236,7 @@ export function NewAppointmentModal({
                 <button
                   type="submit"
                   disabled={!canSubmit}
-                  className="rounded-lg bg-black px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
+                  className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200 dark:disabled:bg-gray-600"
                 >
                   Salvar agendamento
                 </button>

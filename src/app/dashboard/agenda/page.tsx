@@ -154,17 +154,17 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
   return (
     <section className="mx-auto flex h-[calc(100vh-8.5rem)] w-full max-w-7xl flex-col gap-4 overflow-hidden">
       {params.error ? (
-        <p className="rounded-lg border border-black bg-white px-4 py-3 text-sm text-black">{params.error}</p>
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400">{params.error}</p>
       ) : null}
       {params.success ? (
-        <p className="rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-black">
+        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-600 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-400">
           {params.success}
         </p>
       ) : null}
 
-      <section className="flex min-h-0 flex-1 flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <section className="flex min-h-0 flex-1 flex-col rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-3xl font-black tracking-tight text-black">Agenda</h2>
+          <h2 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white">Agenda</h2>
 
           <div className="flex items-center gap-2">
             <NewAppointmentModal
@@ -176,7 +176,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
               action={createAppointmentAction}
             />
 
-            <div className="flex items-center rounded-lg bg-zinc-100 p-1">
+            <div className="flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
               {([
                 { key: "day", label: "Dia" },
                 { key: "week", label: "Semana" },
@@ -185,8 +185,10 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                 <Link
                   key={item.key}
                   href={`/dashboard/agenda?view=${item.key}&date=${dateKey}`}
-                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition ${
-                    view === item.key ? "bg-white text-black shadow-sm" : "text-zinc-500 hover:text-black"
+                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+                    view === item.key
+                      ? "bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white"
+                      : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
                   }`}
                 >
                   {item.label}
@@ -194,19 +196,19 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
               ))}
             </div>
 
-            <div className="flex items-center rounded-lg border border-zinc-200">
+            <div className="flex items-center rounded-lg border border-gray-200 dark:border-gray-700">
               <Link
                 href={`/dashboard/agenda?view=${view}&date=${prevDate}`}
-                className="px-3 py-2 text-zinc-500 hover:bg-zinc-100"
+                className="px-3 py-2 text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
               >
                 ←
               </Link>
-              <span className="border-l border-zinc-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-zinc-600">
+              <span className="border-l border-gray-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-gray-600 dark:border-gray-700 dark:text-gray-300">
                 {currentLabel}
               </span>
               <Link
                 href={`/dashboard/agenda?view=${view}&date=${nextDate}`}
-                className="border-l border-zinc-200 px-3 py-2 text-zinc-500 hover:bg-zinc-100"
+                className="border-l border-gray-200 px-3 py-2 text-gray-500 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
               >
                 →
               </Link>
@@ -217,8 +219,8 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
               aria-disabled={isOnToday}
               className={`rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] transition ${
                 isOnToday
-                  ? "pointer-events-none border-zinc-200 bg-zinc-100 text-zinc-400"
-                  : "border-zinc-200 text-zinc-600 hover:bg-zinc-100"
+                  ? "pointer-events-none border-gray-200 bg-gray-100 text-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500"
+                  : "border-gray-200 text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
               }`}
             >
               Hoje
@@ -227,17 +229,17 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
         </div>
 
         {view === "day" ? (
-          <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-zinc-200 bg-white text-zinc-900">
+          <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-gray-200 bg-white text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
             <div className="min-w-[980px]">
-              <div className="grid bg-zinc-50" style={{ gridTemplateColumns: `80px repeat(${Math.max(barbers.length, 1)}, minmax(180px, 1fr))` }}>
-                <div className="border-r border-zinc-200 p-3" />
+              <div className="grid bg-gray-50 dark:bg-gray-800/50" style={{ gridTemplateColumns: `80px repeat(${Math.max(barbers.length, 1)}, minmax(180px, 1fr))` }}>
+                <div className="border-r border-gray-200 p-3 dark:border-gray-700" />
                 {barbers.map((b) => (
-                  <div key={b.id} className="border-r border-zinc-200 p-3 last:border-r-0">
+                  <div key={b.id} className="border-r border-gray-200 p-3 last:border-r-0 dark:border-gray-700">
                     <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-200 text-xs font-bold text-zinc-700">{initials(b.name)}</div>
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-xs font-bold text-gray-700 dark:bg-gray-700 dark:text-gray-200">{initials(b.name)}</div>
                       <div>
-                        <p className="text-sm font-semibold text-zinc-900">{b.name}</p>
-                        <p className="text-[10px] uppercase tracking-[0.14em] text-zinc-500">Barbeiro</p>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{b.name}</p>
+                        <p className="text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Barbeiro</p>
                       </div>
                     </div>
                   </div>
@@ -245,9 +247,9 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
               </div>
 
               <div className="relative flex" style={{ height: `${gridHeight}px` }}>
-                <div className="w-20 shrink-0 border-r border-zinc-200 bg-zinc-50">
+                <div className="w-20 shrink-0 border-r border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
                   {hours.map((h) => (
-                    <div key={h} className="border-b border-zinc-200 px-2 pt-2 text-center text-xs text-zinc-500" style={{ height: `${ROW_HEIGHT}px` }}>
+                    <div key={h} className="border-b border-gray-200 px-2 pt-2 text-center text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400" style={{ height: `${ROW_HEIGHT}px` }}>
                       {`${String(h).padStart(2, "0")}:00`}
                     </div>
                   ))}
@@ -258,9 +260,9 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                     const bApps = appointments.filter((a) => a.barber.id === b.id);
 
                     return (
-                      <div key={b.id} className="relative border-r border-zinc-200 last:border-r-0">
+                      <div key={b.id} className="relative border-r border-gray-200 last:border-r-0 dark:border-gray-700">
                         {hours.map((h) => (
-                          <div key={`${b.id}-${h}`} className="border-b border-zinc-200" style={{ height: `${ROW_HEIGHT}px` }} />
+                          <div key={`${b.id}-${h}`} className="border-b border-gray-200 dark:border-gray-700" style={{ height: `${ROW_HEIGHT}px` }} />
                         ))}
 
                         {bApps.map((a) => {
@@ -295,8 +297,8 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
         ) : (
           <div className="min-h-0 flex-1 overflow-auto space-y-3">
             {barbers.length > 0 ? (
-              <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/50">
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">
                   Legenda por barbeiro
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -322,11 +324,11 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                 const list = apptByDay.get(key) ?? [];
 
                 return (
-                  <div key={key} className="min-h-24 rounded-lg border border-zinc-200 bg-white p-2">
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500">{formatDate(d)}</p>
+                  <div key={key} className="min-h-24 rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-900">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">{formatDate(d)}</p>
                     <div className="space-y-2">
                       {list.length === 0 ? (
-                        <p className="text-xs text-zinc-400">Sem horarios</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">Sem horarios</p>
                       ) : (
                         list.slice(0, 4).map((a) => {
                           const tone = toneBySeed(a.barber.id);
@@ -349,7 +351,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
           </div>
         )}
 
-        <p className="mt-3 text-xs text-zinc-500">
+        <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
           Exibicao harmonizada entre Dia, Semana e Mes. Intervalo atual: {SLOT_MINUTES} min (parametrizavel).
         </p>
       </section>
