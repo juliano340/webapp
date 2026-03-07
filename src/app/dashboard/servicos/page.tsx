@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { deleteServiceAction } from "@/app/dashboard/actions";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { formatBRLFromCents, formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
@@ -47,6 +50,7 @@ export default async function ServicosPage({ searchParams }: ServicosPageProps) 
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Valor</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Duracao</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Criado em</th>
+                <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Acoes</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -57,6 +61,23 @@ export default async function ServicosPage({ searchParams }: ServicosPageProps) 
                   <td className="px-6 py-4 text-gray-700 dark:text-gray-300">{formatBRLFromCents(service.priceInCents)}</td>
                   <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{service.durationInMinutes} min</td>
                   <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{formatDate(service.createdAt)}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-end gap-2">
+                      <Link
+                        href={`/dashboard/servicos/editar/${service.id}`}
+                        className="rounded-md border border-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                      >
+                        Editar
+                      </Link>
+                      <ConfirmDeleteButton
+                        action={deleteServiceAction}
+                        id={service.id}
+                        errorPath="/dashboard/servicos"
+                        successPath="/dashboard/servicos"
+                        itemLabel={service.name}
+                      />
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -60,10 +60,11 @@ export function CurrentTimeLine({
 
   return (
     <div
-      className="pointer-events-none absolute right-0 z-30"
-      style={{ left: `${timeColumnWidthPx}px`, top: `${state.top}px` }}
+      className="pointer-events-none absolute z-30"
+      style={{ left: `${timeColumnWidthPx}px`, right: 0, top: `${state.top}px` }}
     >
-      <div className="relative border-t-2 border-red-500">
+      <div className="relative w-full">
+        <div className="h-[2px] w-full bg-red-500 shadow-[0_0_0_1px_rgba(239,68,68,0.35)]" />
         <span className="absolute -left-2 -top-1.5 h-3 w-3 rounded-full bg-red-500" />
         <span className="absolute left-2 -top-3 rounded bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
           {state.label}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AppointmentStatus } from "@prisma/client";
 import { formatBRLFromCents } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
@@ -11,26 +12,24 @@ function getTodayRange() {
   return { start, end };
 }
 
-function statusForAppointment(startsAt: Date, endsAt: Date): { label: string; className: string } {
-  const now = new Date();
-
-  if (now >= startsAt && now <= endsAt) {
+function statusForAppointment(status: AppointmentStatus): { label: string; className: string } {
+  if (status === AppointmentStatus.CANCELADO) {
     return {
-      label: "Em atendimento",
-      className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+      label: "Cancelado",
+      className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
     };
   }
 
-  if (startsAt > now) {
+  if (status === AppointmentStatus.FINALIZADO) {
     return {
-      label: "Confirmado",
-      className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+      label: "Finalizado",
+      className: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
     };
   }
 
   return {
-    label: "Concluido",
-    className: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+    label: "Agendado",
+    className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
   };
 }
 
@@ -158,7 +157,7 @@ export default async function DashboardPage() {
                 </tr>
               ) : (
                 upcomingAppointments.map((appointment) => {
-                  const status = statusForAppointment(appointment.startsAt, appointment.endsAt);
+                  const status = statusForAppointment(appointment.status);
                   const timeLabel = appointment.startsAt.toLocaleTimeString("pt-BR", {
                     hour: "2-digit",
                     minute: "2-digit",

@@ -15,6 +15,18 @@ enum Role {
   ADMIN
 }
 
+enum AuditOperation {
+  INSERT
+  UPDATE
+  DELETE
+}
+
+enum AppointmentStatus {
+  AGENDADO
+  CANCELADO
+  FINALIZADO
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -25,8 +37,25 @@ model User {
   role          Role      @default(USER)
   accounts      Account[]
   sessions      Session[]
+  auditLogs     AuditLog[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+model AuditLog {
+  id         String         @id @default(cuid())
+  actorId    String
+  actorEmail String
+  operation  AuditOperation
+  entityType String
+  entityId   String
+  details    String
+  createdAt  DateTime       @default(now())
+
+  actor User @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([entityType, createdAt])
 }
 
 model Client {
@@ -63,6 +92,7 @@ model Appointment {
   clientId   String
   serviceId  String
   barberId   String
+  status     AppointmentStatus @default(AGENDADO)
   startsAt   DateTime
   endsAt     DateTime
   createdAt  DateTime @default(now())

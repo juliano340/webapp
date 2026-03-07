@@ -1,8 +1,10 @@
 "use server";
 
+import { AppointmentStatus, AuditOperation, Role } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
 const clientSchema = z.object({
@@ -31,10 +33,15 @@ const appointmentSchema = z.object({
   serviceId: z.string().min(1),
   date: z.string().min(1),
   startTime: z.string().min(1),
+  status: z.nativeEnum(AppointmentStatus).optional(),
 });
 
 const updateAppointmentSchema = appointmentSchema.extend({
   appointmentId: z.string().min(1),
+});
+
+const idSchema = z.object({
+  id: z.string().min(1),
 });
 
 function withQueryParam(path: string, key: "error" | "success", value: string): string {
@@ -65,9 +72,85 @@ function resolvePath(value: FormDataEntryValue | null, fallback: string): string
   return value;
 }
 
+function parseDateInput(value: string): Date | null {
+  const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const brMatch = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+  let year: number;
+  let month: number;
+  let day: number;
+
+  if (isoMatch) {
+    year = Number(isoMatch[1]);
+    month = Number(isoMatch[2]);
+    day = Number(isoMatch[3]);
+  } else if (brMatch) {
+    day = Number(brMatch[1]);
+    month = Number(brMatch[2]);
+    year = Number(brMatch[3]);
+  } else {
+    return null;
+  }
+
+  const parsedDate = new Date(year, month - 1, day);
+  parsedDate.setHours(0, 0, 0, 0);
+
+  if (
+    parsedDate.getFullYear() !== year ||
+    parsedDate.getMonth() !== month - 1 ||
+    parsedDate.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return parsedDate;
+}
+
+async function getAuditActor() {
+  const session = await auth();
+
+  if (!session?.user?.id || !session.user.email) {
+    redirect("/login");
+  }
+
+  return {
+    id: session.user.id,
+    email: session.user.email,
+    role: session.user.role,
+  };
+}
+
+async function createAuditLog(params: {
+  operation: AuditOperation;
+  entityType: "Client" | "Barber" | "Service";
+  entityId: string;
+  details: string;
+}) {
+  const actor = await getAuditActor();
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: actor.id,
+      actorEmail: actor.email,
+      operation: params.operation,
+      entityType: params.entityType,
+      entityId: params.entityId,
+      details: params.details,
+    },
+  });
+}
+
+function assertAdminRole(role: Role, path: string): void {
+  if (role !== Role.ADMIN) {
+    redirectWithError(path, "Apenas administradores podem alterar cadastros.");
+  }
+}
+
 export async function createClientAction(formData: FormData) {
   const errorPath = resolvePath(formData.get("errorPath"), "/dashboard/clientes");
   const successPath = resolvePath(formData.get("successPath"), "/dashboard/clientes");
+  const actor = await getAuditActor();
+  assertAdminRole(actor.role, errorPath);
 
   const parsed = clientSchema.safeParse({
     name: formData.get("name"),
@@ -80,7 +163,11 @@ export async function createClientAction(formData: FormData) {
     redirectWithError(errorPath, "Dados invalidos para cliente.");
   }
 
-  const birthDate = new Date(`${parsed.data.birthDate}T00:00:00`);
+  const birthDate = parseDateInput(parsed.data.birthDate);
+
+  if (!birthDate) {
+    redirectWithError(errorPath, "Data de nascimento invalida.");
+  }
 
   const existingClient = await prisma.client.findUnique({
     where: { email: parsed.data.email },
@@ -91,12 +178,23 @@ export async function createClientAction(formData: FormData) {
     redirectWithError(errorPath, "Ja existe cliente com esse email.");
   }
 
-  await prisma.client.create({
+  const createdClient = await prisma.client.create({
     data: {
       name: parsed.data.name,
       email: parsed.data.email,
       phone: parsed.data.phone,
       birthDate,
+    },
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: actor.id,
+      actorEmail: actor.email,
+      operation: AuditOperation.INSERT,
+      entityType: "Client",
+      entityId: createdClient.id,
+      details: `Cliente criado: ${createdClient.name} (${createdClient.email})`,
     },
   });
 
@@ -107,6 +205,8 @@ export async function createClientAction(formData: FormData) {
 export async function createServiceAction(formData: FormData) {
   const errorPath = resolvePath(formData.get("errorPath"), "/dashboard/servicos");
   const successPath = resolvePath(formData.get("successPath"), "/dashboard/servicos");
+  const actor = await getAuditActor();
+  assertAdminRole(actor.role, errorPath);
 
   const parsed = serviceSchema.safeParse({
     name: formData.get("name"),
@@ -121,12 +221,23 @@ export async function createServiceAction(formData: FormData) {
 
   const priceInCents = Math.round(parsed.data.priceInBRL * 100);
 
-  await prisma.service.create({
+  const createdService = await prisma.service.create({
     data: {
       name: parsed.data.name,
       description: parsed.data.description,
       priceInCents,
       durationInMinutes: parsed.data.durationInMinutes,
+    },
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: actor.id,
+      actorEmail: actor.email,
+      operation: AuditOperation.INSERT,
+      entityType: "Service",
+      entityId: createdService.id,
+      details: `Servico criado: ${createdService.name}`,
     },
   });
 
@@ -137,6 +248,8 @@ export async function createServiceAction(formData: FormData) {
 export async function createBarberAction(formData: FormData) {
   const errorPath = resolvePath(formData.get("errorPath"), "/dashboard/barbeiros");
   const successPath = resolvePath(formData.get("successPath"), "/dashboard/barbeiros");
+  const actor = await getAuditActor();
+  assertAdminRole(actor.role, errorPath);
 
   const parsed = barberSchema.safeParse({
     name: formData.get("name"),
@@ -159,7 +272,7 @@ export async function createBarberAction(formData: FormData) {
     }
   }
 
-  await prisma.barber.create({
+  const createdBarber = await prisma.barber.create({
     data: {
       name: parsed.data.name,
       email: parsed.data.email || null,
@@ -167,8 +280,276 @@ export async function createBarberAction(formData: FormData) {
     },
   });
 
+  await prisma.auditLog.create({
+    data: {
+      actorId: actor.id,
+      actorEmail: actor.email,
+      operation: AuditOperation.INSERT,
+      entityType: "Barber",
+      entityId: createdBarber.id,
+      details: `Barbeiro criado: ${createdBarber.name}`,
+    },
+  });
+
   revalidatePath("/dashboard/barbeiros");
   redirectWithSuccess(successPath, "Barbeiro cadastrado com sucesso.");
+}
+
+export async function updateClientAction(formData: FormData) {
+  const parsedId = idSchema.safeParse({ id: formData.get("id") });
+  const errorPathFallback = parsedId.success
+    ? `/dashboard/clientes/editar/${parsedId.data.id}`
+    : "/dashboard/clientes";
+  const errorPath = resolvePath(formData.get("errorPath"), errorPathFallback);
+  const successPath = resolvePath(formData.get("successPath"), "/dashboard/clientes");
+  const actor = await getAuditActor();
+  assertAdminRole(actor.role, errorPath);
+
+  if (!parsedId.success) {
+    redirectWithError(errorPath, "Cliente invalido para edicao.");
+  }
+
+  const parsed = clientSchema.safeParse({
+    name: formData.get("name"),
+    email: formData.get("email"),
+    phone: formData.get("phone"),
+    birthDate: formData.get("birthDate"),
+  });
+
+  if (!parsed.success) {
+    redirectWithError(errorPath, "Dados invalidos para cliente.");
+  }
+
+  const birthDate = parseDateInput(parsed.data.birthDate);
+
+  if (!birthDate) {
+    redirectWithError(errorPath, "Data de nascimento invalida.");
+  }
+  const existingClient = await prisma.client.findFirst({
+    where: {
+      email: parsed.data.email,
+      id: { not: parsedId.data.id },
+    },
+    select: { id: true },
+  });
+
+  if (existingClient) {
+    redirectWithError(errorPath, "Ja existe cliente com esse email.");
+  }
+
+  const updatedClient = await prisma.client.update({
+    where: { id: parsedId.data.id },
+    data: {
+      name: parsed.data.name,
+      email: parsed.data.email,
+      phone: parsed.data.phone,
+      birthDate,
+    },
+  });
+
+  await createAuditLog({
+    operation: AuditOperation.UPDATE,
+    entityType: "Client",
+    entityId: updatedClient.id,
+    details: `Cliente atualizado: ${updatedClient.name} (${updatedClient.email})`,
+  });
+
+  revalidatePath("/dashboard/clientes");
+  redirectWithSuccess(successPath, "Cliente atualizado com sucesso.");
+}
+
+export async function deleteClientAction(formData: FormData) {
+  const parsedId = idSchema.safeParse({ id: formData.get("id") });
+  const errorPath = resolvePath(formData.get("errorPath"), "/dashboard/clientes");
+  const successPath = resolvePath(formData.get("successPath"), "/dashboard/clientes");
+  const actor = await getAuditActor();
+  assertAdminRole(actor.role, errorPath);
+
+  if (!parsedId.success) {
+    redirectWithError(errorPath, "Cliente invalido para exclusao.");
+  }
+
+  const deletedClient = await prisma.client.delete({
+    where: { id: parsedId.data.id },
+    select: { id: true, name: true, email: true },
+  });
+
+  await createAuditLog({
+    operation: AuditOperation.DELETE,
+    entityType: "Client",
+    entityId: deletedClient.id,
+    details: `Cliente removido: ${deletedClient.name} (${deletedClient.email})`,
+  });
+
+  revalidatePath("/dashboard/clientes");
+  revalidatePath("/dashboard/agenda");
+  redirectWithSuccess(successPath, "Cliente removido com sucesso.");
+}
+
+export async function updateBarberAction(formData: FormData) {
+  const parsedId = idSchema.safeParse({ id: formData.get("id") });
+  const errorPathFallback = parsedId.success
+    ? `/dashboard/barbeiros/editar/${parsedId.data.id}`
+    : "/dashboard/barbeiros";
+  const errorPath = resolvePath(formData.get("errorPath"), errorPathFallback);
+  const successPath = resolvePath(formData.get("successPath"), "/dashboard/barbeiros");
+  const actor = await getAuditActor();
+  assertAdminRole(actor.role, errorPath);
+
+  if (!parsedId.success) {
+    redirectWithError(errorPath, "Barbeiro invalido para edicao.");
+  }
+
+  const parsed = barberSchema.safeParse({
+    name: formData.get("name"),
+    email: formData.get("email"),
+    phone: formData.get("phone"),
+  });
+
+  if (!parsed.success) {
+    redirectWithError(errorPath, "Dados invalidos para barbeiro.");
+  }
+
+  const normalizedEmail = parsed.data.email || null;
+  if (normalizedEmail) {
+    const existingBarber = await prisma.barber.findFirst({
+      where: {
+        email: normalizedEmail,
+        id: { not: parsedId.data.id },
+      },
+      select: { id: true },
+    });
+
+    if (existingBarber) {
+      redirectWithError(errorPath, "Ja existe barbeiro com esse email.");
+    }
+  }
+
+  const updatedBarber = await prisma.barber.update({
+    where: { id: parsedId.data.id },
+    data: {
+      name: parsed.data.name,
+      email: normalizedEmail,
+      phone: parsed.data.phone,
+    },
+  });
+
+  await createAuditLog({
+    operation: AuditOperation.UPDATE,
+    entityType: "Barber",
+    entityId: updatedBarber.id,
+    details: `Barbeiro atualizado: ${updatedBarber.name}`,
+  });
+
+  revalidatePath("/dashboard/barbeiros");
+  revalidatePath("/dashboard/agenda");
+  redirectWithSuccess(successPath, "Barbeiro atualizado com sucesso.");
+}
+
+export async function deleteBarberAction(formData: FormData) {
+  const parsedId = idSchema.safeParse({ id: formData.get("id") });
+  const errorPath = resolvePath(formData.get("errorPath"), "/dashboard/barbeiros");
+  const successPath = resolvePath(formData.get("successPath"), "/dashboard/barbeiros");
+  const actor = await getAuditActor();
+  assertAdminRole(actor.role, errorPath);
+
+  if (!parsedId.success) {
+    redirectWithError(errorPath, "Barbeiro invalido para exclusao.");
+  }
+
+  const deletedBarber = await prisma.barber.delete({
+    where: { id: parsedId.data.id },
+    select: { id: true, name: true },
+  });
+
+  await createAuditLog({
+    operation: AuditOperation.DELETE,
+    entityType: "Barber",
+    entityId: deletedBarber.id,
+    details: `Barbeiro removido: ${deletedBarber.name}`,
+  });
+
+  revalidatePath("/dashboard/barbeiros");
+  revalidatePath("/dashboard/agenda");
+  redirectWithSuccess(successPath, "Barbeiro removido com sucesso.");
+}
+
+export async function updateServiceAction(formData: FormData) {
+  const parsedId = idSchema.safeParse({ id: formData.get("id") });
+  const errorPathFallback = parsedId.success
+    ? `/dashboard/servicos/editar/${parsedId.data.id}`
+    : "/dashboard/servicos";
+  const errorPath = resolvePath(formData.get("errorPath"), errorPathFallback);
+  const successPath = resolvePath(formData.get("successPath"), "/dashboard/servicos");
+  const actor = await getAuditActor();
+  assertAdminRole(actor.role, errorPath);
+
+  if (!parsedId.success) {
+    redirectWithError(errorPath, "Servico invalido para edicao.");
+  }
+
+  const parsed = serviceSchema.safeParse({
+    name: formData.get("name"),
+    description: formData.get("description"),
+    priceInBRL: formData.get("priceInBRL"),
+    durationInMinutes: formData.get("durationInMinutes"),
+  });
+
+  if (!parsed.success) {
+    redirectWithError(errorPath, "Dados invalidos para servico.");
+  }
+
+  const priceInCents = Math.round(parsed.data.priceInBRL * 100);
+  const updatedService = await prisma.service.update({
+    where: { id: parsedId.data.id },
+    data: {
+      name: parsed.data.name,
+      description: parsed.data.description,
+      priceInCents,
+      durationInMinutes: parsed.data.durationInMinutes,
+    },
+  });
+
+  await createAuditLog({
+    operation: AuditOperation.UPDATE,
+    entityType: "Service",
+    entityId: updatedService.id,
+    details: `Servico atualizado: ${updatedService.name}`,
+  });
+
+  revalidatePath("/dashboard/servicos");
+  revalidatePath("/dashboard/agenda");
+  revalidatePath("/dashboard");
+  redirectWithSuccess(successPath, "Servico atualizado com sucesso.");
+}
+
+export async function deleteServiceAction(formData: FormData) {
+  const parsedId = idSchema.safeParse({ id: formData.get("id") });
+  const errorPath = resolvePath(formData.get("errorPath"), "/dashboard/servicos");
+  const successPath = resolvePath(formData.get("successPath"), "/dashboard/servicos");
+  const actor = await getAuditActor();
+  assertAdminRole(actor.role, errorPath);
+
+  if (!parsedId.success) {
+    redirectWithError(errorPath, "Servico invalido para exclusao.");
+  }
+
+  const deletedService = await prisma.service.delete({
+    where: { id: parsedId.data.id },
+    select: { id: true, name: true },
+  });
+
+  await createAuditLog({
+    operation: AuditOperation.DELETE,
+    entityType: "Service",
+    entityId: deletedService.id,
+    details: `Servico removido: ${deletedService.name}`,
+  });
+
+  revalidatePath("/dashboard/servicos");
+  revalidatePath("/dashboard/agenda");
+  revalidatePath("/dashboard");
+  redirectWithSuccess(successPath, "Servico removido com sucesso.");
 }
 
 export async function createAppointmentAction(formData: FormData) {
@@ -180,6 +561,7 @@ export async function createAppointmentAction(formData: FormData) {
     serviceId: formData.get("serviceId"),
     date: formData.get("date"),
     startTime: formData.get("startTime"),
+    status: formData.get("status"),
   });
 
   if (!parsed.success) {
@@ -203,17 +585,20 @@ export async function createAppointmentAction(formData: FormData) {
 
   const endsAt = new Date(startsAt.getTime() + service.durationInMinutes * 60 * 1000);
 
-  const conflict = await prisma.appointment.findFirst({
-    where: {
-      barberId: parsed.data.barberId,
-      startsAt: { lt: endsAt },
-      endsAt: { gt: startsAt },
-    },
-    select: { id: true },
-  });
+  if ((parsed.data.status ?? AppointmentStatus.AGENDADO) !== AppointmentStatus.CANCELADO) {
+    const conflict = await prisma.appointment.findFirst({
+      where: {
+        barberId: parsed.data.barberId,
+        status: { not: AppointmentStatus.CANCELADO },
+        startsAt: { lt: endsAt },
+        endsAt: { gt: startsAt },
+      },
+      select: { id: true },
+    });
 
-  if (conflict) {
-    redirectWithError(returnPath, "Conflito: barbeiro ja possui agendamento nesse horario.");
+    if (conflict) {
+      redirectWithError(returnPath, "Conflito: barbeiro ja possui agendamento nesse horario.");
+    }
   }
 
   await prisma.appointment.create({
@@ -221,6 +606,7 @@ export async function createAppointmentAction(formData: FormData) {
       clientId: parsed.data.clientId,
       barberId: parsed.data.barberId,
       serviceId: parsed.data.serviceId,
+      status: parsed.data.status ?? AppointmentStatus.AGENDADO,
       startsAt,
       endsAt,
     },
@@ -241,6 +627,7 @@ export async function updateAppointmentAction(formData: FormData) {
     serviceId: formData.get("serviceId"),
     date: formData.get("date"),
     startTime: formData.get("startTime"),
+    status: formData.get("status"),
   });
 
   if (!parsed.success) {
@@ -274,18 +661,21 @@ export async function updateAppointmentAction(formData: FormData) {
 
   const endsAt = new Date(startsAt.getTime() + service.durationInMinutes * 60 * 1000);
 
-  const conflict = await prisma.appointment.findFirst({
-    where: {
-      barberId: parsed.data.barberId,
-      id: { not: parsed.data.appointmentId },
-      startsAt: { lt: endsAt },
-      endsAt: { gt: startsAt },
-    },
-    select: { id: true },
-  });
+  if ((parsed.data.status ?? AppointmentStatus.AGENDADO) !== AppointmentStatus.CANCELADO) {
+    const conflict = await prisma.appointment.findFirst({
+      where: {
+        barberId: parsed.data.barberId,
+        status: { not: AppointmentStatus.CANCELADO },
+        id: { not: parsed.data.appointmentId },
+        startsAt: { lt: endsAt },
+        endsAt: { gt: startsAt },
+      },
+      select: { id: true },
+    });
 
-  if (conflict) {
-    redirectWithError(returnPath, "Conflito: barbeiro ja possui agendamento nesse horario.");
+    if (conflict) {
+      redirectWithError(returnPath, "Conflito: barbeiro ja possui agendamento nesse horario.");
+    }
   }
 
   await prisma.appointment.update({
@@ -294,6 +684,7 @@ export async function updateAppointmentAction(formData: FormData) {
       clientId: parsed.data.clientId,
       barberId: parsed.data.barberId,
       serviceId: parsed.data.serviceId,
+      status: parsed.data.status ?? AppointmentStatus.AGENDADO,
       startsAt,
       endsAt,
     },
@@ -302,4 +693,28 @@ export async function updateAppointmentAction(formData: FormData) {
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/agenda");
   redirectWithSuccess(returnPath, "Agendamento atualizado com sucesso.");
+}
+
+export async function deleteAppointmentAction(formData: FormData) {
+  const returnPath = resolvePath(formData.get("returnPath"), "/dashboard/agenda");
+  const parsedId = idSchema.safeParse({ id: formData.get("id") });
+
+  if (!parsedId.success) {
+    redirectWithError(returnPath, "Agendamento invalido para exclusao.");
+  }
+
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: parsedId.data.id },
+    select: { id: true },
+  });
+
+  if (!appointment) {
+    redirectWithError(returnPath, "Agendamento nao encontrado.");
+  }
+
+  await prisma.appointment.delete({ where: { id: parsedId.data.id } });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/agenda");
+  redirectWithSuccess(returnPath, "Agendamento removido com sucesso.");
 }

@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { deleteClientAction } from "@/app/dashboard/actions";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
@@ -86,6 +89,7 @@ export default async function ClientesPage({ searchParams }: ClientesPageProps) 
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Telefone</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Nascimento</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Criado em</th>
+                <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Acoes</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -111,6 +115,23 @@ export default async function ClientesPage({ searchParams }: ClientesPageProps) 
                   <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{client.phone}</td>
                   <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{formatDate(client.birthDate)}</td>
                   <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{formatDate(client.createdAt)}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-end gap-2">
+                      <Link
+                        href={`/dashboard/clientes/editar/${client.id}`}
+                        className="rounded-md border border-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                      >
+                        Editar
+                      </Link>
+                      <ConfirmDeleteButton
+                        action={deleteClientAction}
+                        id={client.id}
+                        errorPath="/dashboard/clientes"
+                        successPath="/dashboard/clientes"
+                        itemLabel={client.name}
+                      />
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

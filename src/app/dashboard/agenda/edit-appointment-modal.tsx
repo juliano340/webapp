@@ -18,6 +18,7 @@ type EditableAppointment = {
   serviceName: string;
   date: string;
   startTime: string;
+  status: "AGENDADO" | "CANCELADO" | "FINALIZADO";
 };
 
 type SearchableSelectProps = {
@@ -122,6 +123,7 @@ type EditAppointmentModalProps = {
   returnPath: string;
   initialOpen?: boolean;
   action: (formData: FormData) => void | Promise<void>;
+  deleteAction: (formData: FormData) => void | Promise<void>;
 };
 
 export function EditAppointmentModal({
@@ -132,6 +134,7 @@ export function EditAppointmentModal({
   returnPath,
   initialOpen = false,
   action,
+  deleteAction,
 }: EditAppointmentModalProps) {
   const router = useRouter();
   const isOpen = initialOpen && appointment !== null;
@@ -143,6 +146,8 @@ export function EditAppointmentModal({
   const [clientQuery, setClientQuery] = useState(appointment?.clientName ?? "");
   const [barberQuery, setBarberQuery] = useState(appointment?.barberName ?? "");
   const [serviceQuery, setServiceQuery] = useState(appointment?.serviceName ?? "");
+  const [status, setStatus] = useState(appointment?.status ?? "AGENDADO");
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     function onEscape(event: KeyboardEvent) {
@@ -224,6 +229,7 @@ export function EditAppointmentModal({
           <input name="clientId" value={clientId} readOnly hidden />
           <input name="barberId" value={barberId} readOnly hidden />
           <input name="serviceId" value={serviceId} readOnly hidden />
+          <input name="status" value={status} readOnly hidden />
 
           <input
             name="date"
@@ -241,16 +247,71 @@ export function EditAppointmentModal({
             required
           />
 
+          <select
+            value={status}
+            onChange={(event) => {
+              const value = event.target.value;
+              if (value === "AGENDADO" || value === "CANCELADO" || value === "FINALIZADO") {
+                setStatus(value);
+              }
+            }}
+            className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900 focus:ring-1 focus:ring-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-gray-200 dark:focus:ring-gray-200"
+          >
+            <option value="AGENDADO">Agendado</option>
+            <option value="CANCELADO">Cancelado</option>
+            <option value="FINALIZADO">Finalizado</option>
+          </select>
+
           <div className="md:col-span-2">
-            <button
-              type="submit"
-              disabled={!canSubmit}
-              className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200 dark:disabled:bg-gray-600"
-            >
-              Salvar alteracoes
-            </button>
+            <div className="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                className="rounded-lg border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/20"
+              >
+                Excluir agendamento
+              </button>
+
+              <button
+                type="submit"
+                disabled={!canSubmit}
+                className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200 dark:disabled:bg-gray-600"
+              >
+                Salvar alteracoes
+              </button>
+            </div>
           </div>
         </form>
+
+        {confirmDelete ? (
+          <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-black/35 p-4">
+            <section className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-gray-700 dark:bg-gray-900">
+              <h4 className="text-base font-black tracking-tight text-gray-900 dark:text-white">Confirmar exclusao</h4>
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                Deseja excluir este agendamento? Esta acao nao pode ser desfeita.
+              </p>
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
+                  Cancelar
+                </button>
+                <form action={deleteAction}>
+                  <input type="hidden" name="id" value={appointment.id} />
+                  <input type="hidden" name="returnPath" value={returnPath} />
+                  <button
+                    type="submit"
+                    className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
+                  >
+                    Confirmar
+                  </button>
+                </form>
+              </div>
+            </section>
+          </div>
+        ) : null}
       </section>
     </div>
   );

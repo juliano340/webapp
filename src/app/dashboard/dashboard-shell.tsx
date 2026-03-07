@@ -18,6 +18,7 @@ const menuItems = [
   { href: "/dashboard/clientes", label: "Clientes", icon: "CL" },
   { href: "/dashboard/barbeiros", label: "Barbeiros", icon: "BB" },
   { href: "/dashboard/servicos", label: "Servicos", icon: "SV" },
+  { href: "/dashboard/admin", label: "Admin", icon: "AD", adminOnly: true, matchPrefix: true },
 ];
 
 export function DashboardShell({ children, userEmail, userRole }: DashboardShellProps) {
@@ -76,7 +77,11 @@ export function DashboardShell({ children, userEmail, userRole }: DashboardShell
             Cadastros
           </p>
           {menuItems.map((item) => {
-            const active = pathname === item.href;
+            if (item.adminOnly && userRole !== "ADMIN") {
+              return null;
+            }
+
+            const active = item.matchPrefix ? pathname.startsWith(item.href) : pathname === item.href;
             return (
               <Link
                 key={`${item.href}-${item.label}`}
@@ -84,14 +89,14 @@ export function DashboardShell({ children, userEmail, userRole }: DashboardShell
                 onClick={() => setIsOpen(false)}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   active
-                    ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900"
+                    ? "bg-gray-900 text-white dark:bg-sky-600 dark:text-white"
                     : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                 }`}
               >
                 <span
                   className={`flex h-7 w-7 items-center justify-center rounded-lg text-[10px] font-semibold ${
                     active
-                      ? "bg-white/20 text-white dark:bg-white/20"
+                      ? "bg-white/20 text-white dark:bg-sky-500/40 dark:text-white"
                       : "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
                   }`}
                 >

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { createAppointmentAction, updateAppointmentAction } from "@/app/dashboard/actions";
+import { AppointmentStatus } from "@prisma/client";
+import { createAppointmentAction, deleteAppointmentAction, updateAppointmentAction } from "@/app/dashboard/actions";
 import { formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { CurrentTimeLine } from "./current-time-line";
@@ -50,6 +51,27 @@ function toTimeKey(date: Date): string {
   const hh = `${date.getHours()}`.padStart(2, "0");
   const mm = `${date.getMinutes()}`.padStart(2, "0");
   return `${hh}:${mm}`;
+}
+
+function statusTone(status: AppointmentStatus): { badge: string; label: string } {
+  if (status === AppointmentStatus.CANCELADO) {
+    return {
+      badge: "border border-red-200 bg-red-100 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-200",
+      label: "Cancelado",
+    };
+  }
+
+  if (status === AppointmentStatus.FINALIZADO) {
+    return {
+      badge: "border border-gray-200 bg-gray-100 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200",
+      label: "Finalizado",
+    };
+  }
+
+  return {
+    badge: "border border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
+    label: "Agendado",
+  };
 }
 
 const MINI_CARD_TONES = [
@@ -159,6 +181,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
         serviceName: editingAppointment.service.name,
         date: toDateKey(editingAppointment.startsAt),
         startTime: toTimeKey(editingAppointment.startsAt),
+        status: editingAppointment.status,
       }
     : null;
 
@@ -201,6 +224,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
             />
 
             <EditAppointmentModal
+              key={editingAppointment?.id ?? "no-edit"}
               clients={clients.map((c) => ({ id: c.id, name: c.name }))}
               barbers={barbers.map((b) => ({ id: b.id, name: b.name }))}
               services={services.map((s) => ({ id: s.id, name: s.name }))}
@@ -208,6 +232,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
               returnPath={agendaPath}
               initialOpen={editingAppointment !== null}
               action={updateAppointmentAction}
+              deleteAction={deleteAppointmentAction}
             />
 
             <div className="flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
@@ -304,6 +329,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                           const duration = (a.endsAt.getTime() - a.startsAt.getTime()) / 60000;
                           const height = Math.max((duration / SLOT_MINUTES) * ROW_HEIGHT - 6, 34);
                           const tone = toneBySeed(a.barber.id);
+                          const status = statusTone(a.status);
 
                           return (
                             <Link
@@ -315,6 +341,9 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                             >
                               <p className={`text-xs font-semibold leading-tight ${tone.name}`}>{a.client.name}</p>
                               <p className={`text-[11px] leading-tight ${tone.meta}`}>{a.service.name}</p>
+                              <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${status.badge}`}>
+                                {status.label}
+                              </span>
                               <p className={`mt-1 text-[10px] leading-tight ${tone.meta}`}>
                                 {a.startsAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} - {a.endsAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                               </p>
@@ -358,16 +387,34 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
               {days.map((d) => {
                 const key = toDateKey(d);
                 const list = apptByDay.get(key) ?? [];
+                const isTodayCard = key === todayDate;
 
                 return (
-                  <div key={key} className="min-h-24 rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-900">
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">{formatDate(d)}</p>
+                  <div
+                    key={key}
+                    className={`min-h-24 rounded-lg border p-2 transition-colors ${
+                      isTodayCard
+                        ? "border-sky-300 bg-sky-50 ring-1 ring-sky-200 dark:border-sky-700 dark:bg-sky-900/20 dark:ring-sky-800"
+                        : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
+                    }`}
+                  >
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${isTodayCard ? "text-sky-700 dark:text-sky-300" : "text-gray-500 dark:text-gray-400"}`}>
+                        {formatDate(d)}
+                      </p>
+                      {isTodayCard ? (
+                        <span className="rounded-full bg-sky-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white dark:bg-sky-500">
+                          Hoje
+                        </span>
+                      ) : null}
+                    </div>
                     <div className="space-y-2">
                       {list.length === 0 ? (
                         <p className="text-xs text-gray-400 dark:text-gray-500">Sem horarios</p>
                       ) : (
                         list.slice(0, 4).map((a) => {
                           const tone = toneBySeed(a.barber.id);
+                          const status = statusTone(a.status);
 
                           return (
                             <Link
@@ -380,6 +427,9 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                               <p className={tone.meta}>
                                 {a.barber.name} · {a.startsAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                               </p>
+                              <span className={`mt-1 inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${status.badge}`}>
+                                {status.label}
+                              </span>
                             </Link>
                           );
                         })
