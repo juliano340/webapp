@@ -274,12 +274,12 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                           return (
                             <article
                               key={a.id}
-                              className={`absolute left-1 right-1 rounded-md border px-2 py-2 text-xs shadow-sm ${tone.card}`}
+                              className={`absolute left-1 right-1 overflow-hidden rounded-md border px-2 py-1.5 text-xs leading-tight shadow-sm ${tone.card}`}
                               style={{ top: `${top + 3}px`, height: `${height}px` }}
                             >
-                              <p className={`font-semibold ${tone.name}`}>{a.client.name}</p>
-                              <p className={tone.meta}>{a.service.name}</p>
-                              <p className={`mt-1 text-[11px] ${tone.meta}`}>
+                              <p className={`text-xs font-semibold leading-tight ${tone.name}`}>{a.client.name}</p>
+                              <p className={`text-[11px] leading-tight ${tone.meta}`}>{a.service.name}</p>
+                              <p className={`mt-1 text-[10px] leading-tight ${tone.meta}`}>
                                 {a.startsAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} - {a.endsAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                               </p>
                             </article>
