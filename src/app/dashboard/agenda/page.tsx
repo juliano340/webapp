@@ -10,7 +10,15 @@ import { NewAppointmentModal } from "./new-appointment-modal";
 type AgendaView = "day" | "week" | "month";
 
 type AgendaPageProps = {
-  searchParams?: Promise<{ view?: string; date?: string; error?: string; success?: string; new?: string; edit?: string }>;
+  searchParams?: Promise<{
+    view?: string;
+    display?: string;
+    date?: string;
+    error?: string;
+    success?: string;
+    new?: string;
+    edit?: string;
+  }>;
 };
 
 const START_HOUR = 8;
@@ -74,6 +82,21 @@ function statusTone(status: AppointmentStatus): { badge: string; label: string }
   };
 }
 
+function getAppointmentServiceNames(appointment: {
+  service: { name: string };
+  extraServices: Array<{ service: { name: string } }>;
+}): string[] {
+  return [appointment.service.name, ...appointment.extraServices.map((item) => item.service.name)];
+}
+
+function getServiceSummary(serviceNames: string[]): string {
+  if (serviceNames.length <= 1) {
+    return serviceNames[0] ?? "Servico";
+  }
+
+  return `${serviceNames[0]} +${serviceNames.length - 1}`;
+}
+
 const MINI_CARD_TONES = [
   { card: "border-sky-200 bg-sky-50", name: "text-sky-900", meta: "text-sky-700", dot: "bg-sky-500" },
   { card: "border-emerald-200 bg-emerald-50", name: "text-emerald-900", meta: "text-emerald-700", dot: "bg-emerald-500" },
@@ -135,20 +158,33 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
   const params = (await searchParams) ?? {};
   const view: AgendaView =
     params.view === "week" || params.view === "month" || params.view === "day" ? params.view : "day";
+  const displayMode: "calendar" | "table" = params.display === "table" ? "table" : "calendar";
 
   const parsed = params.date ? new Date(`${params.date}T00:00:00`) : new Date();
   const safeDate = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
   const dateKey = toDateKey(safeDate);
   const { start, end, days } = getRange(safeDate, view);
 
-  const [clients, services, barbers, appointments] = await Promise.all([
+  const [clients, services, barbers, appointments, systemSettings] = await Promise.all([
     prisma.client.findMany({ orderBy: { name: "asc" } }),
     prisma.service.findMany({ orderBy: { name: "asc" } }),
     prisma.barber.findMany({ orderBy: { name: "asc" } }),
     prisma.appointment.findMany({
       where: { startsAt: { gte: start, lt: end } },
-      include: { client: true, service: true, barber: true },
+      include: {
+        client: true,
+        service: true,
+        barber: true,
+        extraServices: {
+          include: { service: true },
+        },
+      },
       orderBy: { startsAt: "asc" },
+    }),
+    prisma.systemSettings.upsert({
+      where: { id: 1 },
+      update: {},
+      create: { id: 1, confirmFarFutureAppointmentEnabled: true },
     }),
   ]);
 
@@ -167,7 +203,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
   const nextDate = toDateKey(addDays(safeDate, view === "month" ? 30 : view === "week" ? 7 : 1));
   const todayDate = toDateKey(new Date());
   const isOnToday = dateKey === todayDate;
-  const agendaPath = `/dashboard/agenda?view=${view}&date=${dateKey}`;
+  const agendaPath = `/dashboard/agenda?view=${view}&display=${displayMode}&date=${dateKey}`;
   const editingId = typeof params.edit === "string" ? params.edit : "";
   const editingAppointment = appointments.find((appointment) => appointment.id === editingId) ?? null;
   const editableAppointment = editingAppointment
@@ -177,8 +213,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
         clientName: editingAppointment.client.name,
         barberId: editingAppointment.barber.id,
         barberName: editingAppointment.barber.name,
-        serviceId: editingAppointment.service.id,
-        serviceName: editingAppointment.service.name,
+        serviceIds: [editingAppointment.service.id, ...editingAppointment.extraServices.map((item) => item.serviceId)],
         date: toDateKey(editingAppointment.startsAt),
         startTime: toTimeKey(editingAppointment.startsAt),
         status: editingAppointment.status,
@@ -214,6 +249,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
 
           <div className="flex items-center gap-2">
             <NewAppointmentModal
+              key={`new-${dateKey}-${systemSettings.confirmFarFutureAppointmentEnabled ? "cf1" : "cf0"}`}
               clients={clients.map((c) => ({ id: c.id, name: c.name }))}
               barbers={barbers.map((b) => ({ id: b.id, name: b.name }))}
               services={services.map((s) => ({ id: s.id, name: s.name }))}
@@ -221,6 +257,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
               initialOpen={params.new === "1"}
               action={createAppointmentAction}
               returnPath={agendaPath}
+              requireFutureConfirmation={systemSettings.confirmFarFutureAppointmentEnabled}
             />
 
             <EditAppointmentModal
@@ -233,6 +270,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
               initialOpen={editingAppointment !== null}
               action={updateAppointmentAction}
               deleteAction={deleteAppointmentAction}
+              requireFutureConfirmation={systemSettings.confirmFarFutureAppointmentEnabled}
             />
 
             <div className="flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
@@ -243,7 +281,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
               ] as const).map((item) => (
                 <Link
                   key={item.key}
-                  href={`/dashboard/agenda?view=${item.key}&date=${dateKey}`}
+                  href={`/dashboard/agenda?view=${item.key}&display=${displayMode}&date=${dateKey}`}
                   className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
                     view === item.key
                       ? "bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white"
@@ -255,9 +293,28 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
               ))}
             </div>
 
+            <div className="flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
+              {([
+                { key: "calendar", label: "Calendario" },
+                { key: "table", label: "Tabela" },
+              ] as const).map((item) => (
+                <Link
+                  key={item.key}
+                  href={`/dashboard/agenda?view=${view}&display=${item.key}&date=${dateKey}`}
+                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+                    displayMode === item.key
+                      ? "bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white"
+                      : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+
             <div className="flex items-center rounded-lg border border-gray-200 dark:border-gray-700">
               <Link
-                href={`/dashboard/agenda?view=${view}&date=${prevDate}`}
+                href={`/dashboard/agenda?view=${view}&display=${displayMode}&date=${prevDate}`}
                 className="px-3 py-2 text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
               >
                 ←
@@ -266,7 +323,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                 {currentLabel}
               </span>
               <Link
-                href={`/dashboard/agenda?view=${view}&date=${nextDate}`}
+                href={`/dashboard/agenda?view=${view}&display=${displayMode}&date=${nextDate}`}
                 className="border-l border-gray-200 px-3 py-2 text-gray-500 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
               >
                 →
@@ -274,7 +331,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
             </div>
 
             <Link
-              href={`/dashboard/agenda?view=${view}&date=${todayDate}`}
+              href={`/dashboard/agenda?view=${view}&display=${displayMode}&date=${todayDate}`}
               aria-disabled={isOnToday}
               className={`rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] transition ${
                 isOnToday
@@ -287,7 +344,65 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
           </div>
         </div>
 
-        {view === "day" ? (
+        {displayMode === "table" ? (
+          <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-left text-sm">
+                <thead className="border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-800/50">
+                  <tr>
+                    <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Horario</th>
+                    <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Data</th>
+                    <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Cliente</th>
+                    <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Servico</th>
+                    <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Barbeiro</th>
+                    <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Status</th>
+                    <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Acoes</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {appointments.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-6 text-gray-500 dark:text-gray-400">
+                        Sem agendamentos no periodo selecionado.
+                      </td>
+                    </tr>
+                  ) : (
+                    appointments.map((appointment) => {
+                      const status = statusTone(appointment.status);
+                      const serviceSummary = getServiceSummary(getAppointmentServiceNames(appointment));
+                      const appointmentDateKey = toDateKey(appointment.startsAt);
+
+                      return (
+                        <tr key={appointment.id} className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                          <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">
+                            {appointment.startsAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{appointment.startsAt.toLocaleDateString("pt-BR")}</td>
+                          <td className="px-4 py-3 text-gray-900 dark:text-white">{appointment.client.name}</td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{serviceSummary}</td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{appointment.barber.name}</td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${status.badge}`}>
+                              {status.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <Link
+                              href={`/dashboard/agenda?view=day&display=calendar&date=${appointmentDateKey}&edit=${appointment.id}`}
+                              className="rounded-md border border-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                            >
+                              Abrir
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : view === "day" ? (
           <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-gray-200 bg-white text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
             <div className="min-w-[980px]">
               <div className="grid bg-gray-50 dark:bg-gray-800/50" style={{ gridTemplateColumns: `80px repeat(${Math.max(barbers.length, 1)}, minmax(180px, 1fr))` }}>
@@ -330,6 +445,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                           const height = Math.max((duration / SLOT_MINUTES) * ROW_HEIGHT - 6, 34);
                           const tone = toneBySeed(a.barber.id);
                           const status = statusTone(a.status);
+                          const serviceSummary = getServiceSummary(getAppointmentServiceNames(a));
 
                           return (
                             <Link
@@ -340,7 +456,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                               title="Clique para editar"
                             >
                               <p className={`text-xs font-semibold leading-tight ${tone.name}`}>{a.client.name}</p>
-                              <p className={`text-[11px] leading-tight ${tone.meta}`}>{a.service.name}</p>
+                              <p className={`text-[11px] leading-tight ${tone.meta}`}>{serviceSummary}</p>
                               <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${status.badge}`}>
                                 {status.label}
                               </span>
@@ -415,6 +531,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                         list.slice(0, 4).map((a) => {
                           const tone = toneBySeed(a.barber.id);
                           const status = statusTone(a.status);
+                          const serviceSummary = getServiceSummary(getAppointmentServiceNames(a));
 
                           return (
                             <Link
@@ -425,7 +542,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                             >
                               <p className={`font-medium ${tone.name}`}>{a.client.name}</p>
                               <p className={tone.meta}>
-                                {a.barber.name} · {a.startsAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                                {serviceSummary} · {a.startsAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                               </p>
                               <span className={`mt-1 inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${status.badge}`}>
                                 {status.label}

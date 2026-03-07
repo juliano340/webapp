@@ -33,6 +33,25 @@ function statusForAppointment(status: AppointmentStatus): { label: string; class
   };
 }
 
+function toDateKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = `${date.getMonth() + 1}`.padStart(2, "0");
+  const d = `${date.getDate()}`.padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function getServiceSummary(appointment: {
+  service: { name: string };
+  extraServices: Array<{ service: { name: string } }>;
+}): string {
+  const names = [appointment.service.name, ...appointment.extraServices.map((item) => item.service.name)];
+  if (names.length <= 1) {
+    return names[0] ?? "Servico";
+  }
+
+  return `${names[0]} +${names.length - 1}`;
+}
+
 export default async function DashboardPage() {
   const { start, end } = getTodayRange();
 
@@ -43,6 +62,7 @@ export default async function DashboardPage() {
       },
       include: {
         service: { select: { priceInCents: true } },
+        extraServices: { include: { service: { select: { priceInCents: true } } } },
       },
     }),
     prisma.client.count({
@@ -58,6 +78,7 @@ export default async function DashboardPage() {
         client: { select: { name: true } },
         barber: { select: { name: true } },
         service: { select: { name: true } },
+        extraServices: { include: { service: { select: { name: true } } } },
       },
       orderBy: { startsAt: "asc" },
       take: 8,
@@ -65,7 +86,8 @@ export default async function DashboardPage() {
   ]);
 
   const dailyRevenueInCents = appointmentsToday.reduce((total, appointment) => {
-    return total + appointment.service.priceInCents;
+    const extraTotal = appointment.extraServices.reduce((sum, extra) => sum + extra.service.priceInCents, 0);
+    return total + appointment.service.priceInCents + extraTotal;
   }, 0);
 
   const monthLabel = new Date().toLocaleDateString("pt-BR", {
@@ -146,12 +168,13 @@ export default async function DashboardPage() {
                 <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">Servico</th>
                 <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">Barbeiro</th>
                 <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">Status</th>
+                <th className="px-6 py-3 text-right text-[11px] font-bold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">Abrir</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {upcomingAppointments.length === 0 ? (
                 <tr>
-                  <td className="px-6 py-6 text-gray-500 dark:text-gray-400" colSpan={5}>
+                  <td className="px-6 py-6 text-gray-500 dark:text-gray-400" colSpan={6}>
                     Sem agendamentos futuros no momento.
                   </td>
                 </tr>
@@ -167,12 +190,20 @@ export default async function DashboardPage() {
                     <tr key={appointment.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                       <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">{timeLabel}</td>
                       <td className="px-6 py-4 text-gray-900 dark:text-white">{appointment.client.name}</td>
-                      <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{appointment.service.name}</td>
+                      <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{getServiceSummary(appointment)}</td>
                       <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{appointment.barber.name}</td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${status.className}`}>
                           {status.label}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Link
+                          href={`/dashboard/agenda?view=day&date=${toDateKey(appointment.startsAt)}&edit=${appointment.id}`}
+                          className="rounded-md border border-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                        >
+                          Abrir
+                        </Link>
                       </td>
                     </tr>
                   );

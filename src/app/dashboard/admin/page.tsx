@@ -21,6 +21,15 @@ export default async function AdminPage() {
         </Link>
 
         <Link
+          href="/dashboard/admin/comissoes"
+          className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800/50"
+        >
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Financeiro</p>
+          <h3 className="mt-2 text-xl font-black tracking-tight text-gray-900 dark:text-white">Comissionamento</h3>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Regras por barbeiro/servico e relatorios comparativos.</p>
+        </Link>
+
+        <Link
           href="/dashboard/admin/usuarios"
           className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800/50"
         >

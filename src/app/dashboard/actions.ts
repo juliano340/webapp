@@ -30,10 +30,10 @@ const barberSchema = z.object({
 const appointmentSchema = z.object({
   clientId: z.string().min(1),
   barberId: z.string().min(1),
-  serviceId: z.string().min(1),
   date: z.string().min(1),
   startTime: z.string().min(1),
   status: z.nativeEnum(AppointmentStatus).optional(),
+  futureDateConfirmed: z.string().optional(),
 });
 
 const updateAppointmentSchema = appointmentSchema.extend({
@@ -43,6 +43,29 @@ const updateAppointmentSchema = appointmentSchema.extend({
 const idSchema = z.object({
   id: z.string().min(1),
 });
+
+function parseServiceIdsFromForm(formData: FormData): string[] {
+  const ids = formData
+    .getAll("serviceIds")
+    .filter((value): value is string => typeof value === "string")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  const fallback = formData.get("serviceId");
+  if (ids.length === 0 && typeof fallback === "string" && fallback.trim() !== "") {
+    ids.push(fallback.trim());
+  }
+
+  return Array.from(new Set(ids));
+}
+
+async function getSystemSettings() {
+  return prisma.systemSettings.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1, confirmFarFutureAppointmentEnabled: true },
+  });
+}
 
 function withQueryParam(path: string, key: "error" | "success", value: string): string {
   const [pathname, existingQuery = ""] = path.split("?", 2);
@@ -554,27 +577,41 @@ export async function deleteServiceAction(formData: FormData) {
 
 export async function createAppointmentAction(formData: FormData) {
   const returnPath = resolvePath(formData.get("returnPath"), "/dashboard/agenda");
+  const serviceIds = parseServiceIdsFromForm(formData);
 
   const parsed = appointmentSchema.safeParse({
     clientId: formData.get("clientId"),
     barberId: formData.get("barberId"),
-    serviceId: formData.get("serviceId"),
     date: formData.get("date"),
     startTime: formData.get("startTime"),
     status: formData.get("status"),
+    futureDateConfirmed: formData.get("futureDateConfirmed"),
   });
 
   if (!parsed.success) {
     redirectWithError(returnPath, "Dados invalidos para agendamento.");
   }
 
-  const service = await prisma.service.findUnique({
-    where: { id: parsed.data.serviceId },
-    select: { durationInMinutes: true },
+  if (serviceIds.length === 0) {
+    redirectWithError(returnPath, "Selecione ao menos um servico.");
+  }
+
+  const services = await prisma.service.findMany({
+    where: { id: { in: serviceIds } },
+    select: { id: true, durationInMinutes: true },
   });
 
-  if (!service) {
-    redirectWithError(returnPath, "Servico nao encontrado.");
+  if (services.length !== serviceIds.length) {
+    redirectWithError(returnPath, "Um ou mais servicos nao foram encontrados.");
+  }
+
+  const serviceById = new Map(services.map((service) => [service.id, service]));
+  const orderedServices = serviceIds
+    .map((id) => serviceById.get(id))
+    .filter((service): service is NonNullable<typeof service> => Boolean(service));
+
+  if (orderedServices.length === 0) {
+    redirectWithError(returnPath, "Selecione ao menos um servico valido.");
   }
 
   const startsAt = new Date(`${parsed.data.date}T${parsed.data.startTime}:00`);
@@ -583,7 +620,23 @@ export async function createAppointmentAction(formData: FormData) {
     redirectWithError(returnPath, "Data ou horario invalido.");
   }
 
-  const endsAt = new Date(startsAt.getTime() + service.durationInMinutes * 60 * 1000);
+  const now = new Date();
+  if (startsAt.getTime() < now.getTime()) {
+    redirectWithError(returnPath, "Nao e permitido agendar em data/horario passado.");
+  }
+
+  const systemSettings = await getSystemSettings();
+  if (systemSettings.confirmFarFutureAppointmentEnabled) {
+    const limit = new Date(now);
+    limit.setDate(limit.getDate() + 7);
+
+    if (startsAt.getTime() > limit.getTime() && parsed.data.futureDateConfirmed !== "1") {
+      redirectWithError(returnPath, "Confirme o agendamento para data acima de 7 dias.");
+    }
+  }
+
+  const totalDurationInMinutes = orderedServices.reduce((total, service) => total + service.durationInMinutes, 0);
+  const endsAt = new Date(startsAt.getTime() + totalDurationInMinutes * 60 * 1000);
 
   if ((parsed.data.status ?? AppointmentStatus.AGENDADO) !== AppointmentStatus.CANCELADO) {
     const conflict = await prisma.appointment.findFirst({
@@ -605,10 +658,15 @@ export async function createAppointmentAction(formData: FormData) {
     data: {
       clientId: parsed.data.clientId,
       barberId: parsed.data.barberId,
-      serviceId: parsed.data.serviceId,
+      serviceId: orderedServices[0].id,
       status: parsed.data.status ?? AppointmentStatus.AGENDADO,
       startsAt,
       endsAt,
+      extraServices: {
+        create: orderedServices.slice(1).map((service) => ({
+          serviceId: service.id,
+        })),
+      },
     },
   });
 
@@ -619,25 +677,30 @@ export async function createAppointmentAction(formData: FormData) {
 
 export async function updateAppointmentAction(formData: FormData) {
   const returnPath = resolvePath(formData.get("returnPath"), "/dashboard/agenda");
+  const serviceIds = parseServiceIdsFromForm(formData);
 
   const parsed = updateAppointmentSchema.safeParse({
     appointmentId: formData.get("appointmentId"),
     clientId: formData.get("clientId"),
     barberId: formData.get("barberId"),
-    serviceId: formData.get("serviceId"),
     date: formData.get("date"),
     startTime: formData.get("startTime"),
     status: formData.get("status"),
+    futureDateConfirmed: formData.get("futureDateConfirmed"),
   });
 
   if (!parsed.success) {
     redirectWithError(returnPath, "Dados invalidos para edicao do agendamento.");
   }
 
-  const [service, appointment] = await Promise.all([
-    prisma.service.findUnique({
-      where: { id: parsed.data.serviceId },
-      select: { durationInMinutes: true },
+  if (serviceIds.length === 0) {
+    redirectWithError(returnPath, "Selecione ao menos um servico.");
+  }
+
+  const [services, appointment] = await Promise.all([
+    prisma.service.findMany({
+      where: { id: { in: serviceIds } },
+      select: { id: true, durationInMinutes: true },
     }),
     prisma.appointment.findUnique({
       where: { id: parsed.data.appointmentId },
@@ -649,8 +712,17 @@ export async function updateAppointmentAction(formData: FormData) {
     redirectWithError(returnPath, "Agendamento nao encontrado.");
   }
 
-  if (!service) {
-    redirectWithError(returnPath, "Servico nao encontrado.");
+  if (services.length !== serviceIds.length) {
+    redirectWithError(returnPath, "Um ou mais servicos nao foram encontrados.");
+  }
+
+  const serviceById = new Map(services.map((service) => [service.id, service]));
+  const orderedServices = serviceIds
+    .map((id) => serviceById.get(id))
+    .filter((service): service is NonNullable<typeof service> => Boolean(service));
+
+  if (orderedServices.length === 0) {
+    redirectWithError(returnPath, "Selecione ao menos um servico valido.");
   }
 
   const startsAt = new Date(`${parsed.data.date}T${parsed.data.startTime}:00`);
@@ -659,7 +731,23 @@ export async function updateAppointmentAction(formData: FormData) {
     redirectWithError(returnPath, "Data ou horario invalido.");
   }
 
-  const endsAt = new Date(startsAt.getTime() + service.durationInMinutes * 60 * 1000);
+  const now = new Date();
+  if (startsAt.getTime() < now.getTime()) {
+    redirectWithError(returnPath, "Nao e permitido agendar em data/horario passado.");
+  }
+
+  const systemSettings = await getSystemSettings();
+  if (systemSettings.confirmFarFutureAppointmentEnabled) {
+    const limit = new Date(now);
+    limit.setDate(limit.getDate() + 7);
+
+    if (startsAt.getTime() > limit.getTime() && parsed.data.futureDateConfirmed !== "1") {
+      redirectWithError(returnPath, "Confirme o agendamento para data acima de 7 dias.");
+    }
+  }
+
+  const totalDurationInMinutes = orderedServices.reduce((total, service) => total + service.durationInMinutes, 0);
+  const endsAt = new Date(startsAt.getTime() + totalDurationInMinutes * 60 * 1000);
 
   if ((parsed.data.status ?? AppointmentStatus.AGENDADO) !== AppointmentStatus.CANCELADO) {
     const conflict = await prisma.appointment.findFirst({
@@ -683,10 +771,16 @@ export async function updateAppointmentAction(formData: FormData) {
     data: {
       clientId: parsed.data.clientId,
       barberId: parsed.data.barberId,
-      serviceId: parsed.data.serviceId,
+      serviceId: orderedServices[0].id,
       status: parsed.data.status ?? AppointmentStatus.AGENDADO,
       startsAt,
       endsAt,
+      extraServices: {
+        deleteMany: {},
+        create: orderedServices.slice(1).map((service) => ({
+          serviceId: service.id,
+        })),
+      },
     },
   });
 
