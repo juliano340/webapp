@@ -1,59 +1,40 @@
 import Link from "next/link";
-import { Role } from "@prisma/client";
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 
-export default async function AdminLayout({
+export default function AdminCrmLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const session = await auth();
-
-  if (!session?.user) {
-    redirect("/login");
-  }
-
-  if (session.user.role !== Role.ADMIN) {
-    redirect("/dashboard");
-  }
-
   return (
-    <section className="mx-auto flex w-full max-w-7xl flex-col gap-4">
+    <section className="flex flex-col gap-4">
       <nav className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white p-2 shadow-sm dark:border-gray-800 dark:bg-gray-900">
         <Link
-          href="/dashboard/admin"
+          href="/dashboard/admin/crm"
           className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
         >
           Visao geral
         </Link>
         <Link
-          href="/dashboard/admin/logs"
+          href="/dashboard/admin/crm/automacoes"
           className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
         >
-          Logs
+          Automacoes
         </Link>
         <Link
-          href="/dashboard/admin/comissoes"
+          href="/dashboard/admin/crm/lembretes"
           className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
         >
-          Comissoes
+          Lembretes
         </Link>
         <Link
-          href="/dashboard/admin/crm"
+          href="/dashboard/admin/crm/segmentos"
           className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
         >
-          CRM
+          Segmentos
         </Link>
         <Link
-          href="/dashboard/admin/usuarios"
+          href="/dashboard/admin/crm/canal-whatsapp"
           className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
         >
-          Usuarios/Admins
-        </Link>
-        <Link
-          href="/dashboard/admin/parametros"
-          className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-        >
-          Parametros
+          Canal WhatsApp
         </Link>
       </nav>
 

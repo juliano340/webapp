@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { PrismaClient, Role } from "@prisma/client";
+import { CrmRuleType, PrismaClient, Role } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -19,6 +19,40 @@ async function main() {
       name: "Super Admin",
       passwordHash: hashedPassword,
       role: Role.ADMIN,
+    },
+  });
+
+  await prisma.crmAutomationRule.upsert({
+    where: { type: CrmRuleType.POST_SERVICE },
+    update: {
+      enabled: true,
+      daysAfterService: 14,
+      template:
+        "Oi {nome}, tudo bem? Ja faz {dias} dias do seu {servico} com {barbeiro}. Estamos a disposicao para manutencao na {barbearia}.",
+    },
+    create: {
+      type: CrmRuleType.POST_SERVICE,
+      enabled: true,
+      daysAfterService: 14,
+      template:
+        "Oi {nome}, tudo bem? Ja faz {dias} dias do seu {servico} com {barbeiro}. Estamos a disposicao para manutencao na {barbearia}.",
+    },
+  });
+
+  await prisma.crmAutomationRule.upsert({
+    where: { type: CrmRuleType.BIRTHDAY },
+    update: {
+      enabled: true,
+      daysAfterService: null,
+      template:
+        "Feliz aniversario, {nome}! A equipe da {barbearia} te deseja um dia incrivel. Conte com a gente para seu proximo atendimento.",
+    },
+    create: {
+      type: CrmRuleType.BIRTHDAY,
+      enabled: true,
+      daysAfterService: null,
+      template:
+        "Feliz aniversario, {nome}! A equipe da {barbearia} te deseja um dia incrivel. Conte com a gente para seu proximo atendimento.",
     },
   });
 
