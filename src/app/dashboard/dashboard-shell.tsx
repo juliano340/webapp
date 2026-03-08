@@ -15,9 +15,12 @@ type DashboardShellProps = {
 const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: "DB" },
   { href: "/dashboard/agenda", label: "Agenda", icon: "AG" },
-  { href: "/dashboard/clientes", label: "Clientes", icon: "CL" },
-  { href: "/dashboard/barbeiros", label: "Barbeiros", icon: "BB" },
-  { href: "/dashboard/servicos", label: "Servicos", icon: "SV" },
+  {
+    href: "/dashboard/cadastros",
+    label: "Cadastros",
+    icon: "CD",
+    matchPrefixes: ["/dashboard/cadastros", "/dashboard/clientes", "/dashboard/barbeiros", "/dashboard/servicos"],
+  },
   { href: "/dashboard/admin", label: "Admin", icon: "AD", adminOnly: true, matchPrefix: true },
 ];
 
@@ -73,15 +76,14 @@ export function DashboardShell({ children, userEmail, userRole }: DashboardShell
           <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
             Menu
           </p>
-          <p className="px-3 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
-            Cadastros
-          </p>
           {menuItems.map((item) => {
             if (item.adminOnly && userRole !== "ADMIN") {
               return null;
             }
 
-            const active = item.matchPrefix ? pathname.startsWith(item.href) : pathname === item.href;
+            const matchesPrefix = item.matchPrefix ? pathname.startsWith(item.href) : false;
+            const matchesGroup = item.matchPrefixes ? item.matchPrefixes.some((prefix) => pathname.startsWith(prefix)) : false;
+            const active = matchesPrefix || matchesGroup || pathname === item.href;
             return (
               <Link
                 key={`${item.href}-${item.label}`}

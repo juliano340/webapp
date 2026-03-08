@@ -704,7 +704,7 @@ export async function updateAppointmentAction(formData: FormData) {
     }),
     prisma.appointment.findUnique({
       where: { id: parsed.data.appointmentId },
-      select: { id: true },
+      select: { id: true, startsAt: true },
     }),
   ]);
 
@@ -732,8 +732,16 @@ export async function updateAppointmentAction(formData: FormData) {
   }
 
   const now = new Date();
-  if (startsAt.getTime() < now.getTime()) {
-    redirectWithError(returnPath, "Nao e permitido agendar em data/horario passado.");
+  const currentStartsAt = new Date(appointment.startsAt);
+  currentStartsAt.setSeconds(0, 0);
+
+  const nextStartsAt = new Date(startsAt);
+  nextStartsAt.setSeconds(0, 0);
+
+  const changedStartTime = currentStartsAt.getTime() !== nextStartsAt.getTime();
+
+  if (startsAt.getTime() < now.getTime() && changedStartTime) {
+    redirectWithError(returnPath, "Nao e permitido reagendar para data/horario passado.");
   }
 
   const systemSettings = await getSystemSettings();
