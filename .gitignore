@@ -48,3 +48,7 @@ next-env.d.ts
 /dev.db
 *.sqlite
 *.sqlite-journal
+
+# local runtime/session artifacts
+/.whatsapp-session/
+/tokens/
