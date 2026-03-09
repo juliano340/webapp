@@ -44,6 +44,12 @@ export default async function AdminLayout({
           CRM
         </Link>
         <Link
+          href="/dashboard/admin/solicitacoes"
+          className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+        >
+          Solicitacoes
+        </Link>
+        <Link
           href="/dashboard/admin/usuarios"
           className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
         >
