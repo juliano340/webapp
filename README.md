@@ -18,6 +18,14 @@ npm run dev
 
 Acesse `http://localhost:3000`.
 
+Para alterar a porta via `.env`, defina:
+
+```env
+PORT=3000
+```
+
+Depois reinicie o servidor (`npm run dev` ou `npm run start`).
+
 ## Credenciais iniciais do super admin
 
 Definidas em `./.env`:
