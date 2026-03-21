@@ -11,7 +11,12 @@ export default async function AdminParametrosPage({ searchParams }: AdminParamet
   const settings = await prisma.systemSettings.upsert({
     where: { id: 1 },
     update: {},
-    create: { id: 1, confirmFarFutureAppointmentEnabled: true },
+    create: {
+      id: 1,
+      confirmFarFutureAppointmentEnabled: true,
+      openingTime: "09:00",
+      closingTime: "20:00",
+    },
   });
 
   return (
@@ -67,8 +72,36 @@ export default async function AdminParametrosPage({ searchParams }: AdminParamet
             </span>
           </label>
 
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">
+              <span className="text-xs font-semibold uppercase tracking-[0.1em] text-gray-500 dark:text-gray-400">
+                Horario inicial
+              </span>
+              <input
+                type="time"
+                name="openingTime"
+                defaultValue={settings.openingTime}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900 focus:ring-1 focus:ring-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-gray-200 dark:focus:ring-gray-200"
+                required
+              />
+            </label>
+
+            <label className="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">
+              <span className="text-xs font-semibold uppercase tracking-[0.1em] text-gray-500 dark:text-gray-400">
+                Horario final
+              </span>
+              <input
+                type="time"
+                name="closingTime"
+                defaultValue={settings.closingTime}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900 focus:ring-1 focus:ring-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-gray-200 dark:focus:ring-gray-200"
+                required
+              />
+            </label>
+          </div>
+
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600 dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-300">
-            Regra fixa adicional: o sistema nao permite agendamento em data/horario passado.
+            Regras fixas adicionais: o sistema nao permite agendamento em data/horario passado e bloqueia horarios fora do periodo de funcionamento definido.
           </div>
 
           <button

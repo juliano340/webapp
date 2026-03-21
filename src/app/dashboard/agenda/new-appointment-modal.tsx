@@ -167,11 +167,30 @@ type NewAppointmentModalProps = {
   barbers: OptionItem[];
   services: OptionItem[];
   selectedDate: string;
+  openingTime: string;
+  closingTime: string;
   returnPath?: string;
   requireFutureConfirmation?: boolean;
   initialOpen?: boolean;
   action: (formData: FormData) => void | Promise<void>;
 };
+
+function toMinutes(timeValue: string): number {
+  const [hourPart, minutePart] = timeValue.split(":");
+  return Number(hourPart) * 60 + Number(minutePart);
+}
+
+function clampTimeToOperatingRange(timeValue: string, openingTime: string, closingTime: string): string {
+  const currentMinutes = toMinutes(timeValue);
+  const openingMinutes = toMinutes(openingTime);
+  const closingMinutes = toMinutes(closingTime);
+
+  if (currentMinutes < openingMinutes || currentMinutes >= closingMinutes) {
+    return openingTime;
+  }
+
+  return timeValue;
+}
 
 function isBeyondSevenDays(dateValue: string): boolean {
   if (!dateValue) return false;
@@ -202,6 +221,8 @@ export function NewAppointmentModal({
   barbers,
   services,
   selectedDate,
+  openingTime,
+  closingTime,
   returnPath = "/dashboard/agenda",
   requireFutureConfirmation = true,
   initialOpen = false,
@@ -218,7 +239,9 @@ export function NewAppointmentModal({
   const [barberQuery, setBarberQuery] = useState("");
   const [serviceQuery, setServiceQuery] = useState("");
   const [dateValue, setDateValue] = useState(selectedDate);
-  const [startTimeValue, setStartTimeValue] = useState(currentTimeKey);
+  const [startTimeValue, setStartTimeValue] = useState(() =>
+    clampTimeToOperatingRange(currentTimeKey(), openingTime, closingTime),
+  );
   const [futureDateConfirmed, setFutureDateConfirmed] = useState(false);
   const [showFutureDateConfirm, setShowFutureDateConfirm] = useState(false);
 
@@ -247,7 +270,7 @@ export function NewAppointmentModal({
           setFutureDateConfirmed(false);
           setShowFutureDateConfirm(false);
           setDateValue(selectedDate);
-          setStartTimeValue(currentTimeKey());
+          setStartTimeValue(clampTimeToOperatingRange(currentTimeKey(), openingTime, closingTime));
           setOpen(true);
         }}
         className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
@@ -358,6 +381,8 @@ export function NewAppointmentModal({
                 type="time"
                 value={startTimeValue}
                 onChange={(event) => setStartTimeValue(event.target.value)}
+                min={openingTime}
+                max={closingTime}
                 className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900 focus:ring-1 focus:ring-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-gray-200 dark:focus:ring-gray-200"
                 required
               />

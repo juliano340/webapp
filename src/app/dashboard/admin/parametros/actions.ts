@@ -4,6 +4,7 @@ import { Role } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { isValidTimeValue, timeToMinutes } from "@/lib/working-hours";
 
 function withQueryParam(path: string, key: "error" | "success", value: string): string {
   const [pathname, existingQuery = ""] = path.split("?", 2);
@@ -38,11 +39,34 @@ export async function saveAgendaRulesAction(formData: FormData) {
   await ensureAdmin(returnPath);
 
   const enabled = formData.get("confirmFarFutureAppointmentEnabled") === "on";
+  const openingTimeRaw = formData.get("openingTime");
+  const closingTimeRaw = formData.get("closingTime");
+
+  if (typeof openingTimeRaw !== "string" || !isValidTimeValue(openingTimeRaw)) {
+    redirect(withQueryParam(returnPath, "error", "Horario inicial invalido. Use o formato HH:MM."));
+  }
+
+  if (typeof closingTimeRaw !== "string" || !isValidTimeValue(closingTimeRaw)) {
+    redirect(withQueryParam(returnPath, "error", "Horario final invalido. Use o formato HH:MM."));
+  }
+
+  if (timeToMinutes(closingTimeRaw) <= timeToMinutes(openingTimeRaw)) {
+    redirect(withQueryParam(returnPath, "error", "Horario final deve ser maior que o horario inicial."));
+  }
 
   await prisma.systemSettings.upsert({
     where: { id: 1 },
-    update: { confirmFarFutureAppointmentEnabled: enabled },
-    create: { id: 1, confirmFarFutureAppointmentEnabled: enabled },
+    update: {
+      confirmFarFutureAppointmentEnabled: enabled,
+      openingTime: openingTimeRaw,
+      closingTime: closingTimeRaw,
+    },
+    create: {
+      id: 1,
+      confirmFarFutureAppointmentEnabled: enabled,
+      openingTime: openingTimeRaw,
+      closingTime: closingTimeRaw,
+    },
   });
 
   redirect(withQueryParam(returnPath, "success", "Parametros de agenda atualizados."));

@@ -24,6 +24,16 @@ type BookingRequestItem = {
   barber: { name: string } | null;
 };
 
+type WorkingHours = {
+  openingTime: string;
+  closingTime: string;
+};
+
+function toMinutes(timeValue: string): number {
+  const [hourPart, minutePart] = timeValue.split(":");
+  return Number(hourPart) * 60 + Number(minutePart);
+}
+
 export default function AgendarPage() {
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
@@ -33,6 +43,7 @@ export default function AgendarPage() {
   const [services, setServices] = useState<CatalogService[]>([]);
   const [barbers, setBarbers] = useState<CatalogBarber[]>([]);
   const [requests, setRequests] = useState<BookingRequestItem[]>([]);
+  const [workingHours, setWorkingHours] = useState<WorkingHours>({ openingTime: "09:00", closingTime: "20:00" });
 
   const [serviceId, setServiceId] = useState("");
   const [barberId, setBarberId] = useState("");
@@ -58,6 +69,7 @@ export default function AgendarPage() {
       ok: boolean;
       services: CatalogService[];
       barbers: CatalogBarber[];
+      workingHours?: WorkingHours;
     };
     const requestsData = (await requestsResponse.json()) as {
       ok: boolean;
@@ -66,6 +78,9 @@ export default function AgendarPage() {
 
     setServices(catalogData.services || []);
     setBarbers(catalogData.barbers || []);
+    if (catalogData.workingHours) {
+      setWorkingHours(catalogData.workingHours);
+    }
     setRequests(requestsData.requests || []);
   }
 
@@ -113,6 +128,17 @@ export default function AgendarPage() {
 
     const start = new Date(dateTime);
     const end = new Date(start.getTime() + selectedService.durationInMinutes * 60 * 1000);
+    const openingMinutes = toMinutes(workingHours.openingTime);
+    const closingMinutes = toMinutes(workingHours.closingTime);
+    const startMinutes = start.getHours() * 60 + start.getMinutes();
+    const endMinutes = end.getHours() * 60 + end.getMinutes();
+
+    if (start.toDateString() !== end.toDateString() || startMinutes < openingMinutes || endMinutes > closingMinutes) {
+      setFeedback(
+        `Horario fora de funcionamento. A barbearia atende de ${workingHours.openingTime} ate ${workingHours.closingTime}.`,
+      );
+      return;
+    }
 
     const response = await fetch("/api/public/booking-requests", {
       method: "POST",
@@ -230,6 +256,10 @@ export default function AgendarPage() {
                 className="rounded-lg border border-gray-200 px-3 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-800"
               />
             </div>
+
+            <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+              Horario de funcionamento: {workingHours.openingTime} ate {workingHours.closingTime}.
+            </p>
 
             <button className="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white dark:bg-gray-100 dark:text-gray-900">
               Solicitar agendamento

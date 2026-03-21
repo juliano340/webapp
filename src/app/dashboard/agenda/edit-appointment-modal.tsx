@@ -179,6 +179,8 @@ type EditAppointmentModalProps = {
   barbers: OptionItem[];
   services: OptionItem[];
   appointment: EditableAppointment | null;
+  openingTime: string;
+  closingTime: string;
   returnPath: string;
   requireFutureConfirmation?: boolean;
   initialOpen?: boolean;
@@ -208,6 +210,8 @@ export function EditAppointmentModal({
   barbers,
   services,
   appointment,
+  openingTime,
+  closingTime,
   returnPath,
   requireFutureConfirmation = true,
   initialOpen = false,
@@ -344,6 +348,8 @@ export function EditAppointmentModal({
             name="startTime"
             type="time"
             defaultValue={appointment.startTime}
+            min={openingTime}
+            max={closingTime}
             className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900 focus:ring-1 focus:ring-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-gray-200 dark:focus:ring-gray-200"
             required
           />

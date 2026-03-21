@@ -22,6 +22,17 @@ async function main() {
     },
   });
 
+  await prisma.systemSettings.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      id: 1,
+      confirmFarFutureAppointmentEnabled: true,
+      openingTime: "09:00",
+      closingTime: "20:00",
+    },
+  });
+
   await prisma.crmAutomationRule.upsert({
     where: { type: CrmRuleType.POST_SERVICE },
     update: {

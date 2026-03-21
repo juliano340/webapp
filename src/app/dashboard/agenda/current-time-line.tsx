@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 
 type CurrentTimeLineProps = {
   selectedDate: string;
-  startHour: number;
-  endHour: number;
+  startMinutes: number;
+  endMinutes: number;
   slotMinutes: number;
   rowHeight: number;
   timeColumnWidthPx: number;
@@ -20,8 +20,8 @@ function toDateKey(date: Date): string {
 
 export function CurrentTimeLine({
   selectedDate,
-  startHour,
-  endHour,
+  startMinutes,
+  endMinutes,
   slotMinutes,
   rowHeight,
   timeColumnWidthPx,
@@ -38,8 +38,8 @@ export function CurrentTimeLine({
       return { show: false, top: 0, label: "" };
     }
 
-    const minutesFromStart = now.getHours() * 60 + now.getMinutes() - startHour * 60;
-    const totalMinutes = (endHour - startHour) * 60;
+    const minutesFromStart = now.getHours() * 60 + now.getMinutes() - startMinutes;
+    const totalMinutes = endMinutes - startMinutes;
 
     if (minutesFromStart < 0 || minutesFromStart > totalMinutes) {
       return { show: false, top: 0, label: "" };
@@ -52,7 +52,7 @@ export function CurrentTimeLine({
     });
 
     return { show: true, top, label };
-  }, [now, selectedDate, startHour, endHour, slotMinutes, rowHeight]);
+  }, [now, selectedDate, startMinutes, endMinutes, slotMinutes, rowHeight]);
 
   if (!state.show) {
     return null;

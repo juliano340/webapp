@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { isWithinWorkingHours, resolveWorkingHours } from "@/lib/working-hours";
 
 const clientSchema = z.object({
   name: z.string().min(2),
@@ -63,7 +64,12 @@ async function getSystemSettings() {
   return prisma.systemSettings.upsert({
     where: { id: 1 },
     update: {},
-    create: { id: 1, confirmFarFutureAppointmentEnabled: true },
+    create: {
+      id: 1,
+      confirmFarFutureAppointmentEnabled: true,
+      openingTime: "09:00",
+      closingTime: "20:00",
+    },
   });
 }
 
@@ -637,6 +643,21 @@ export async function createAppointmentAction(formData: FormData) {
 
   const totalDurationInMinutes = orderedServices.reduce((total, service) => total + service.durationInMinutes, 0);
   const endsAt = new Date(startsAt.getTime() + totalDurationInMinutes * 60 * 1000);
+  const workingHours = resolveWorkingHours(systemSettings);
+
+  if (
+    !isWithinWorkingHours({
+      startsAt,
+      endsAt,
+      openingMinutes: workingHours.openingMinutes,
+      closingMinutes: workingHours.closingMinutes,
+    })
+  ) {
+    redirectWithError(
+      returnPath,
+      `Horario fora de funcionamento. A barbearia atende de ${workingHours.openingTime} ate ${workingHours.closingTime}.`,
+    );
+  }
 
   if ((parsed.data.status ?? AppointmentStatus.AGENDADO) !== AppointmentStatus.CANCELADO) {
     const conflict = await prisma.appointment.findFirst({
@@ -756,6 +777,21 @@ export async function updateAppointmentAction(formData: FormData) {
 
   const totalDurationInMinutes = orderedServices.reduce((total, service) => total + service.durationInMinutes, 0);
   const endsAt = new Date(startsAt.getTime() + totalDurationInMinutes * 60 * 1000);
+  const workingHours = resolveWorkingHours(systemSettings);
+
+  if (
+    !isWithinWorkingHours({
+      startsAt,
+      endsAt,
+      openingMinutes: workingHours.openingMinutes,
+      closingMinutes: workingHours.closingMinutes,
+    })
+  ) {
+    redirectWithError(
+      returnPath,
+      `Horario fora de funcionamento. A barbearia atende de ${workingHours.openingTime} ate ${workingHours.closingTime}.`,
+    );
+  }
 
   if ((parsed.data.status ?? AppointmentStatus.AGENDADO) !== AppointmentStatus.CANCELADO) {
     const conflict = await prisma.appointment.findFirst({

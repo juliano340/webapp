@@ -49,7 +49,11 @@ function getServerThemeSnapshot(): ThemeMode {
   return "light";
 }
 
-export function ThemeToggle() {
+type ThemeToggleProps = {
+  fullWidth?: boolean;
+};
+
+export function ThemeToggle({ fullWidth = true }: ThemeToggleProps) {
   const mode = useSyncExternalStore(subscribeTheme, getThemeSnapshot, getServerThemeSnapshot);
 
   function toggle() {
@@ -61,7 +65,9 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+      className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 ${
+        fullWidth ? "w-full" : "w-auto"
+      }`}
       aria-label="Alternar tema"
       title="Alternar tema"
     >

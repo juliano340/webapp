@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getMessagingProvider } from "@/lib/messaging-provider";
 import { prisma } from "@/lib/prisma";
+import { isWithinWorkingHours, resolveWorkingHours } from "@/lib/working-hours";
 
 type ApprovePayload = {
   barberId?: string;
@@ -83,6 +84,32 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       const endsAt = parseDate(payload.endsAt) || bookingRequest.requestedEndAt;
       if (endsAt <= startsAt) {
         return { status: 400 as const, message: "Janela de horario invalida" };
+      }
+
+      const systemSettings = await tx.systemSettings.upsert({
+        where: { id: 1 },
+        update: {},
+        create: {
+          id: 1,
+          confirmFarFutureAppointmentEnabled: true,
+          openingTime: "09:00",
+          closingTime: "20:00",
+        },
+      });
+      const workingHours = resolveWorkingHours(systemSettings);
+
+      if (
+        !isWithinWorkingHours({
+          startsAt,
+          endsAt,
+          openingMinutes: workingHours.openingMinutes,
+          closingMinutes: workingHours.closingMinutes,
+        })
+      ) {
+        return {
+          status: 400 as const,
+          message: `Horario fora do funcionamento da barbearia (${workingHours.openingTime} ate ${workingHours.closingTime})`,
+        };
       }
 
       const conflict = await tx.appointment.findFirst({

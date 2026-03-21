@@ -3,6 +3,7 @@ import { AppointmentStatus } from "@prisma/client";
 import { createAppointmentAction, deleteAppointmentAction, updateAppointmentAction } from "@/app/dashboard/actions";
 import { formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
+import { minutesToTime, resolveWorkingHours } from "@/lib/working-hours";
 import { CurrentTimeLine } from "./current-time-line";
 import { EditAppointmentModal } from "./edit-appointment-modal";
 import { NewAppointmentModal } from "./new-appointment-modal";
@@ -21,8 +22,6 @@ type AgendaPageProps = {
   }>;
 };
 
-const START_HOUR = 8;
-const END_HOUR = 20;
 const SLOT_MINUTES = 60;
 const ROW_HEIGHT = 84;
 const TIME_COLUMN_WIDTH = 80;
@@ -49,10 +48,6 @@ function initials(name: string): string {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
-}
-
-function minutesFromStart(date: Date): number {
-  return date.getHours() * 60 + date.getMinutes() - START_HOUR * 60;
 }
 
 function toTimeKey(date: Date): string {
@@ -95,6 +90,16 @@ function getServiceSummary(serviceNames: string[]): string {
   }
 
   return `${serviceNames[0]} +${serviceNames.length - 1}`;
+}
+
+function formatCreatedAtLabel(date: Date): string {
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 const MINI_CARD_TONES = [
@@ -184,9 +189,20 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
     prisma.systemSettings.upsert({
       where: { id: 1 },
       update: {},
-      create: { id: 1, confirmFarFutureAppointmentEnabled: true },
+      create: {
+        id: 1,
+        confirmFarFutureAppointmentEnabled: true,
+        openingTime: "09:00",
+        closingTime: "20:00",
+      },
     }),
   ]);
+
+  const workingHours = resolveWorkingHours(systemSettings);
+  const openingMinutes = workingHours.openingMinutes;
+  const closingMinutes = workingHours.closingMinutes;
+  const totalMinutes = closingMinutes - openingMinutes;
+  const slotCount = Math.ceil(totalMinutes / SLOT_MINUTES);
 
   const apptByDay = new Map<string, typeof appointments>();
   for (const appointment of appointments) {
@@ -196,8 +212,8 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
     apptByDay.set(key, list);
   }
 
-  const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
-  const gridHeight = (((END_HOUR - START_HOUR) * 60) / SLOT_MINUTES) * ROW_HEIGHT;
+  const slots = Array.from({ length: slotCount }, (_, i) => openingMinutes + i * SLOT_MINUTES);
+  const gridHeight = slotCount * ROW_HEIGHT;
 
   const prevDate = toDateKey(addDays(safeDate, view === "month" ? -30 : view === "week" ? -7 : -1));
   const nextDate = toDateKey(addDays(safeDate, view === "month" ? 30 : view === "week" ? 7 : 1));
@@ -249,7 +265,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
 
           <div className="flex items-center gap-2">
             <NewAppointmentModal
-              key={`new-${dateKey}-${systemSettings.confirmFarFutureAppointmentEnabled ? "cf1" : "cf0"}`}
+              key={`new-${dateKey}-${systemSettings.confirmFarFutureAppointmentEnabled ? "cf1" : "cf0"}-${workingHours.openingTime}-${workingHours.closingTime}`}
               clients={clients.map((c) => ({ id: c.id, name: c.name }))}
               barbers={barbers.map((b) => ({ id: b.id, name: b.name }))}
               services={services.map((s) => ({ id: s.id, name: s.name }))}
@@ -258,6 +274,8 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
               action={createAppointmentAction}
               returnPath={agendaPath}
               requireFutureConfirmation={systemSettings.confirmFarFutureAppointmentEnabled}
+              openingTime={workingHours.openingTime}
+              closingTime={workingHours.closingTime}
             />
 
             <EditAppointmentModal
@@ -271,6 +289,8 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
               action={updateAppointmentAction}
               deleteAction={deleteAppointmentAction}
               requireFutureConfirmation={systemSettings.confirmFarFutureAppointmentEnabled}
+              openingTime={workingHours.openingTime}
+              closingTime={workingHours.closingTime}
             />
 
             <div className="flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
@@ -371,6 +391,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                       const status = statusTone(appointment.status);
                       const serviceSummary = getServiceSummary(getAppointmentServiceNames(appointment));
                       const appointmentDateKey = toDateKey(appointment.startsAt);
+                      const createdAtLabel = formatCreatedAtLabel(appointment.createdAt);
 
                       return (
                         <tr key={appointment.id} className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50">
@@ -385,6 +406,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                             <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${status.badge}`}>
                               {status.label}
                             </span>
+                            <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">Criado em {createdAtLabel}</p>
                           </td>
                           <td className="px-4 py-3 text-right">
                             <Link
@@ -422,9 +444,9 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
 
               <div className="relative flex" style={{ height: `${gridHeight}px` }}>
                 <div className="w-20 shrink-0 border-r border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
-                  {hours.map((h) => (
-                    <div key={h} className="border-b border-gray-200 px-2 pt-2 text-center text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400" style={{ height: `${ROW_HEIGHT}px` }}>
-                      {`${String(h).padStart(2, "0")}:00`}
+                  {slots.map((slotMinute) => (
+                    <div key={slotMinute} className="border-b border-gray-200 px-2 pt-2 text-center text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400" style={{ height: `${ROW_HEIGHT}px` }}>
+                      {minutesToTime(slotMinute)}
                     </div>
                   ))}
                 </div>
@@ -435,17 +457,27 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
 
                     return (
                       <div key={b.id} className="relative border-r border-gray-200 last:border-r-0 dark:border-gray-700">
-                        {hours.map((h) => (
-                          <div key={`${b.id}-${h}`} className="border-b border-gray-200 dark:border-gray-700" style={{ height: `${ROW_HEIGHT}px` }} />
+                        {slots.map((slotMinute) => (
+                          <div key={`${b.id}-${slotMinute}`} className="border-b border-gray-200 dark:border-gray-700" style={{ height: `${ROW_HEIGHT}px` }} />
                         ))}
 
                         {bApps.map((a) => {
-                          const top = (minutesFromStart(a.startsAt) / SLOT_MINUTES) * ROW_HEIGHT;
-                          const duration = (a.endsAt.getTime() - a.startsAt.getTime()) / 60000;
+                          const startMinutes = a.startsAt.getHours() * 60 + a.startsAt.getMinutes();
+                          const endMinutes = a.endsAt.getHours() * 60 + a.endsAt.getMinutes();
+                          const clippedStartMinutes = Math.max(startMinutes, openingMinutes);
+                          const clippedEndMinutes = Math.min(endMinutes, closingMinutes);
+
+                          if (clippedEndMinutes <= clippedStartMinutes) {
+                            return null;
+                          }
+
+                          const top = ((clippedStartMinutes - openingMinutes) / SLOT_MINUTES) * ROW_HEIGHT;
+                          const duration = clippedEndMinutes - clippedStartMinutes;
                           const height = Math.max((duration / SLOT_MINUTES) * ROW_HEIGHT - 6, 34);
                           const tone = toneBySeed(a.barber.id);
                           const status = statusTone(a.status);
                           const serviceSummary = getServiceSummary(getAppointmentServiceNames(a));
+                          const createdAtLabel = formatCreatedAtLabel(a.createdAt);
 
                           return (
                             <Link
@@ -463,6 +495,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                               <p className={`mt-1 text-[10px] leading-tight ${tone.meta}`}>
                                 {a.startsAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} - {a.endsAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                               </p>
+                              <p className={`mt-1 text-[10px] leading-tight ${tone.meta}`}>Criado em {createdAtLabel}</p>
                             </Link>
                           );
                         })}
@@ -471,7 +504,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                   })}
                 </div>
 
-                <CurrentTimeLine selectedDate={dateKey} startHour={START_HOUR} endHour={END_HOUR} slotMinutes={SLOT_MINUTES} rowHeight={ROW_HEIGHT} timeColumnWidthPx={TIME_COLUMN_WIDTH} />
+                <CurrentTimeLine selectedDate={dateKey} startMinutes={openingMinutes} endMinutes={closingMinutes} slotMinutes={SLOT_MINUTES} rowHeight={ROW_HEIGHT} timeColumnWidthPx={TIME_COLUMN_WIDTH} />
               </div>
             </div>
           </div>
@@ -532,6 +565,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                           const tone = toneBySeed(a.barber.id);
                           const status = statusTone(a.status);
                           const serviceSummary = getServiceSummary(getAppointmentServiceNames(a));
+                          const createdAtLabel = formatCreatedAtLabel(a.createdAt);
 
                           return (
                             <Link
@@ -544,6 +578,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                               <p className={tone.meta}>
                                 {serviceSummary} · {a.startsAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                               </p>
+                              <p className={tone.meta}>Criado em {createdAtLabel}</p>
                               <span className={`mt-1 inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${status.badge}`}>
                                 {status.label}
                               </span>
@@ -560,7 +595,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
         )}
 
         <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-          Exibicao harmonizada entre Dia, Semana e Mes. Intervalo atual: {SLOT_MINUTES} min (parametrizavel).
+          Exibicao harmonizada entre Dia, Semana e Mes. Funcionamento configurado: {workingHours.openingTime} ate {workingHours.closingTime}. Intervalo atual: {SLOT_MINUTES} min.
         </p>
       </section>
     </section>

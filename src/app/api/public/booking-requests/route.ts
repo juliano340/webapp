@@ -2,6 +2,7 @@ import { AppointmentStatus, BookingRequestStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { getAuthenticatedCustomer } from "@/lib/customer-auth";
 import { prisma } from "@/lib/prisma";
+import { isWithinWorkingHours, resolveWorkingHours } from "@/lib/working-hours";
 
 type BookingRequestPayload = {
   serviceId?: string;
@@ -73,6 +74,35 @@ export async function POST(request: Request) {
 
   if (requestedStartAt <= new Date()) {
     return NextResponse.json({ ok: false, error: "Nao e permitido solicitar horario no passado" }, { status: 400 });
+  }
+
+  const systemSettings = await prisma.systemSettings.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      id: 1,
+      confirmFarFutureAppointmentEnabled: true,
+      openingTime: "09:00",
+      closingTime: "20:00",
+    },
+  });
+  const workingHours = resolveWorkingHours(systemSettings);
+
+  if (
+    !isWithinWorkingHours({
+      startsAt: requestedStartAt,
+      endsAt: requestedEndAt,
+      openingMinutes: workingHours.openingMinutes,
+      closingMinutes: workingHours.closingMinutes,
+    })
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: `Horario fora do funcionamento da barbearia (${workingHours.openingTime} ate ${workingHours.closingTime}).`,
+      },
+      { status: 400 },
+    );
   }
 
   const service = await prisma.service.findUnique({

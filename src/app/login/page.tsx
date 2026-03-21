@@ -20,7 +20,7 @@ export default async function LoginPage() {
             </div>
             <p className="text-xl font-semibold tracking-tight dark:text-white">BarberManager</p>
           </div>
-          <ThemeToggle />
+          <ThemeToggle fullWidth={false} />
         </div>
       </header>
 
