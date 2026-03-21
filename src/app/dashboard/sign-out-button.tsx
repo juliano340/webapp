@@ -7,9 +7,9 @@ type SignOutButtonProps = {
 };
 
 export function SignOutButton({ className }: SignOutButtonProps) {
-  function handleSignOut() {
-    const callbackUrl = `${window.location.origin}/login`;
-    void signOut({ callbackUrl });
+  async function handleSignOut() {
+    await signOut({ redirect: false });
+    window.location.assign("/login");
   }
 
   return (
