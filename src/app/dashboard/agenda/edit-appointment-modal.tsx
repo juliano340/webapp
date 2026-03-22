@@ -93,7 +93,7 @@ function SearchableSelect({
       </button>
 
       {open ? (
-        <div className="absolute z-20 mt-1 max-h-52 w-full overflow-auto rounded-lg border border-gray-200 bg-white p-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+        <div className="absolute z-30 mt-1.5 max-h-52 w-full overflow-auto rounded-lg border border-cyan-300/80 bg-white p-1 shadow-[0_10px_24px_-16px_rgba(2,132,199,0.5)] ring-1 ring-sky-100/70 dark:border-cyan-600/70 dark:bg-gray-800 dark:ring-sky-900/25">
           {filtered.length === 0 ? (
             <p className="px-2 py-2 text-xs text-gray-500 dark:text-gray-400">Nenhum resultado</p>
           ) : (
@@ -257,7 +257,7 @@ export function EditAppointmentModal({
   const canSubmit = clientId !== "" && barberId !== "" && selectedServiceIds.length > 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-2 md:py-3">
       <button
         type="button"
         onClick={() => router.push(returnPath)}

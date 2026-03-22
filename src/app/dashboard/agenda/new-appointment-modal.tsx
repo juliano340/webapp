@@ -80,7 +80,7 @@ function SearchableSelect({
       </button>
 
       {open ? (
-        <div className="absolute z-20 mt-1 max-h-52 w-full overflow-auto rounded-lg border border-gray-200 bg-white p-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+        <div className="absolute z-30 mt-1.5 max-h-52 w-full overflow-auto rounded-lg border border-cyan-300/80 bg-white p-1 shadow-[0_10px_24px_-16px_rgba(2,132,199,0.5)] ring-1 ring-sky-100/70 dark:border-cyan-600/70 dark:bg-gray-800 dark:ring-sky-900/25">
           {filtered.length === 0 ? (
             <p className="px-2 py-2 text-xs text-gray-500 dark:text-gray-400">Nenhum resultado</p>
           ) : (
@@ -123,15 +123,15 @@ function ServiceMultiSelect({
   }, [options, query]);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-800">
+    <div className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
       <input
         value={query}
         onChange={(event) => onQueryChange(event.target.value)}
         placeholder="Buscar servicos"
-        className="mb-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900 focus:ring-1 focus:ring-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-white dark:focus:border-gray-200 dark:focus:ring-gray-200"
+        className="mb-3 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900 focus:ring-1 focus:ring-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-white dark:focus:border-gray-200 dark:focus:ring-gray-200"
       />
 
-      <div className="max-h-44 space-y-1 overflow-auto pr-1">
+      <div className="max-h-56 space-y-1 overflow-auto pr-1">
         {filtered.length === 0 ? (
           <p className="px-2 py-1 text-xs text-gray-500 dark:text-gray-400">Nenhum servico encontrado.</p>
         ) : (
@@ -280,7 +280,7 @@ export function NewAppointmentModal({
       </button>
 
       {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-2 md:py-3 md:pl-[calc(16rem+1rem)] md:pr-6">
           <button
             type="button"
             onClick={() => {
@@ -288,16 +288,16 @@ export function NewAppointmentModal({
               setShowFutureDateConfirm(false);
               setOpen(false);
             }}
-            className="absolute inset-0 bg-black/40"
+            className="absolute inset-0 bg-gray-950/75 backdrop-blur-[2px]"
             aria-label="Fechar modal"
           />
 
-          <section className="relative z-10 w-full max-w-xl rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-900">
-            <div className="mb-4 flex items-center justify-between gap-3">
+          <section className="relative z-10 w-full max-w-4xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl md:w-[calc(100vw-20rem)] md:max-w-none md:p-8 lg:max-h-[90vh] lg:p-10 dark:border-gray-700 dark:bg-gray-900">
+            <div className="mb-6 flex items-center justify-between gap-3">
               <div>
-                <h3 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">Novo agendamento</h3>
+                <h3 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white">Novo agendamento</h3>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Pesquise e selecione cliente, barbeiro e servico.
+                  Selecione cliente, barbeiro, servicos e horario dentro da janela de funcionamento.
                 </p>
               </div>
               <button
@@ -316,7 +316,7 @@ export function NewAppointmentModal({
             <form
               ref={formRef}
               action={action}
-              className="grid gap-3 md:grid-cols-2"
+              className="grid gap-5 lg:grid-cols-2"
               onSubmit={(event) => {
                 if (requireFutureConfirmation && !futureDateConfirmed && isBeyondSevenDays(dateValue)) {
                   event.preventDefault();
@@ -324,25 +324,69 @@ export function NewAppointmentModal({
                 }
               }}
             >
-              <SearchableSelect
-                options={clients}
-                placeholder="Cliente"
-                query={clientQuery}
-                selectedId={clientId}
-                onQueryChange={setClientQuery}
-                onSelectId={setClientId}
-              />
+              <label className="space-y-1">
+                <span className="text-xs font-semibold uppercase tracking-[0.1em] text-gray-500 dark:text-gray-400">
+                  Cliente
+                </span>
+                <SearchableSelect
+                  options={clients}
+                  placeholder="Digite para buscar cliente"
+                  query={clientQuery}
+                  selectedId={clientId}
+                  onQueryChange={setClientQuery}
+                  onSelectId={setClientId}
+                />
+              </label>
 
-              <SearchableSelect
-                options={barbers}
-                placeholder="Barbeiro"
-                query={barberQuery}
-                selectedId={barberId}
-                onQueryChange={setBarberQuery}
-                onSelectId={setBarberId}
-              />
+              <label className="space-y-1">
+                <span className="text-xs font-semibold uppercase tracking-[0.1em] text-gray-500 dark:text-gray-400">
+                  Barbeiro
+                </span>
+                <SearchableSelect
+                  options={barbers}
+                  placeholder="Digite para buscar barbeiro"
+                  query={barberQuery}
+                  selectedId={barberId}
+                  onQueryChange={setBarberQuery}
+                  onSelectId={setBarberId}
+                />
+              </label>
 
-              <div className="md:col-span-2">
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-gray-500 dark:text-gray-400">Data</p>
+                <input
+                  name="date"
+                  type="date"
+                  value={dateValue}
+                  onChange={(event) => {
+                    setDateValue(event.target.value);
+                    setFutureDateConfirmed(false);
+                    setShowFutureDateConfirm(false);
+                  }}
+                  className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900 focus:ring-1 focus:ring-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-gray-200 dark:focus:ring-gray-200"
+                  required
+                />
+              </div>
+
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-gray-500 dark:text-gray-400">Horario</p>
+                <input
+                  name="startTime"
+                  type="time"
+                  value={startTimeValue}
+                  onChange={(event) => setStartTimeValue(event.target.value)}
+                  min={openingTime}
+                  max={closingTime}
+                  className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900 focus:ring-1 focus:ring-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-gray-200 dark:focus:ring-gray-200"
+                  required
+                />
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  Funcionamento: {openingTime} ate {closingTime}
+                </p>
+              </div>
+
+              <div className="lg:col-span-2">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.1em] text-gray-500 dark:text-gray-400">Servicos</p>
                 <ServiceMultiSelect
                   options={services}
                   query={serviceQuery}
@@ -363,35 +407,11 @@ export function NewAppointmentModal({
               <input name="futureDateConfirmed" value={futureDateConfirmed ? "1" : "0"} readOnly hidden />
               <input name="returnPath" value={returnPath} readOnly hidden />
 
-              <input
-                name="date"
-                type="date"
-                value={dateValue}
-                onChange={(event) => {
-                  setDateValue(event.target.value);
-                  setFutureDateConfirmed(false);
-                  setShowFutureDateConfirm(false);
-                }}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900 focus:ring-1 focus:ring-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-gray-200 dark:focus:ring-gray-200"
-                required
-              />
-
-              <input
-                name="startTime"
-                type="time"
-                value={startTimeValue}
-                onChange={(event) => setStartTimeValue(event.target.value)}
-                min={openingTime}
-                max={closingTime}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-gray-900 focus:ring-1 focus:ring-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-gray-200 dark:focus:ring-gray-200"
-                required
-              />
-
-              <div className="md:col-span-2">
+              <div className="lg:col-span-2 flex justify-end">
                 <button
                   type="submit"
                   disabled={!canSubmit}
-                  className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200 dark:disabled:bg-gray-600"
+                  className="rounded-lg bg-gray-900 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200 dark:disabled:bg-gray-600"
                 >
                   Salvar agendamento
                 </button>
